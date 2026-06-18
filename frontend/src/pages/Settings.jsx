@@ -5,7 +5,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
-  const { user, login } = useAuth();
+  const { user, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
 
   // ── Profil ──

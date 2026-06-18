@@ -18,7 +18,7 @@ export default function JobDetail() {
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [fetchData]);
 
   const handleExportCSV = async () => {
   try {

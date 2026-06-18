@@ -17,7 +17,7 @@ export default function AdminUsers() {
       return;
     }
     fetchUsers();
-  }, []);
+  }, [currentUser?.role, navigate]);
 
   const fetchUsers = async () => {
     try {

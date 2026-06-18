@@ -20,7 +20,7 @@ export default function AdminDashboard() {
       .then((res) => setStats(res.data))
       .catch(() => toast.error('Erreur chargement stats admin.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [navigate, user?.role]);
 
   if (loading) return <div style={styles.loading}>Chargement...</div>;
 
