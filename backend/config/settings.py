@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -9,7 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-DEBUG = True
+# DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -67,14 +69,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Base de données PostgreSQL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'smartrecruit'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': os.getenv('DB_NAME', 'smartrecruit'),
+    #     'USER': os.getenv('DB_USER', 'postgres'),
+    #     'PASSWORD': os.getenv('DB_PASSWORD', ''),
+    #     'HOST': os.getenv('DB_HOST', 'localhost'),
+    #     'PORT': os.getenv('DB_PORT', '5432'),
+    # }
+    'default': dj_database_url.config(
+        default=f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'smartrecruit')}"
+    )
 }
 
 # Authentification JWT
