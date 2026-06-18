@@ -109,6 +109,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Fichiers statiques
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # ← AJOUTER
+
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
