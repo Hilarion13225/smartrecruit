@@ -3,7 +3,16 @@ import axios from 'axios';
 const defaultApiUrl = process.env.NODE_ENV === 'development'
   ? 'http://127.0.0.1:8000/api'
   : '/api';
-const API_URL = process.env.REACT_APP_API_URL || defaultApiUrl;
+
+const normalizeApiUrl = (rawUrl) => {
+  if (!rawUrl) return '/api';
+  const trimmed = rawUrl.replace(/\/+$|\s+/g, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+};
+
+const API_URL = process.env.REACT_APP_API_URL
+  ? normalizeApiUrl(process.env.REACT_APP_API_URL)
+  : defaultApiUrl;
 
 const api = axios.create({
   baseURL: API_URL,
