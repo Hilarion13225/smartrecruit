@@ -466,6 +466,14 @@ const styles = {
     gridTemplateColumns: '220px 1fr',
     gap: '24px',
     alignItems: 'start',
+    '@media (max-width: 1024px)': {
+      gridTemplateColumns: '200px 1fr',
+      gap: '16px',
+    },
+    '@media (max-width: 768px)': {
+      gridTemplateColumns: '1fr',
+      gap: '20px',
+    },
   },
   tabsSidebar: {
     background: '#fff', borderRadius: '12px',
@@ -508,7 +516,14 @@ const styles = {
     fontSize: '14px', color: '#6B7280', marginBottom: '24px',
   },
   form: { display: 'flex', flexDirection: 'column', gap: '18px' },
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+  grid2: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '16px',
+    '@media (max-width: 768px)': {
+      gridTemplateColumns: '1fr',
+    },
+  },
   field: { display: 'flex', flexDirection: 'column', gap: '6px' },
   label: { fontSize: '13px', fontWeight: '600', color: '#374151' },
   input: {
@@ -585,7 +600,12 @@ const styles = {
     top: '2px', right: '2px',
   },
   infoGrid: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    '@media (max-width: 768px)': {
+      gridTemplateColumns: '1fr',
+    },
   },
   infoItem: {
     display: 'flex', flexDirection: 'column', gap: '4px',

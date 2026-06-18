@@ -256,8 +256,15 @@ const styles = {
     color: '#6B7280', fontSize: '16px',
   },
   header: {
-    display: 'flex', alignItems: 'flex-start',
-    gap: '16px', marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '16px',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    '@media (max-width: 768px)': {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
   },
   backBtn: {
     padding: '8px 14px', background: '#F3F4F6',
