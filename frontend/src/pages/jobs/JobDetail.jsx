@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../../api/jobs';
 import { resumesAPI } from '../../api/resumes';
@@ -16,9 +16,26 @@ export default function JobDetail() {
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState('candidates');
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const fetchData = useCallback(async () => {
+  try {
+    const [jobRes, resumesRes] = await Promise.all([
+      jobsAPI.getById(id),
+      resumesAPI.getByJob(id),
+    ]);
+    setJob(jobRes.data);
+    setResumes(resumesRes.data);
+    return { job: jobRes.data, resumes: resumesRes.data };
+  } catch {
+    toast.error('Erreur lors du chargement.');
+    navigate('/jobs');
+  } finally {
+    setLoading(false);
+  }
+}, [id, navigate]);
+
+useEffect(() => {
+  fetchData();
+}, [fetchData]);
 
   const handleExportCSV = async () => {
   try {
@@ -59,21 +76,7 @@ const handleExportPDF = async () => {
     toast.error("Erreur lors de l'export PDF.");
   }
 };
-  const fetchData = async () => {
-    try {
-      const [jobRes, resumesRes] = await Promise.all([
-        jobsAPI.getById(id),
-        resumesAPI.getByJob(id),
-      ]);
-      setJob(jobRes.data);
-      setResumes(resumesRes.data);
-    } catch {
-      toast.error('Erreur lors du chargement.');
-      navigate('/jobs');
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleUpload = async (files) => {
     try {
@@ -90,7 +93,15 @@ const handleExportPDF = async () => {
     try {
       await resumesAPI.analyze(id);
       toast.success('Analyse lancée !');
-      setTimeout(() => { fetchData(); setAnalyzing(false); }, 2000);
+      // Poll for results up to ~10s (10 attempts x 1s)
+      const maxAttempts = 10;
+      for (let i = 0; i < maxAttempts; i++) {
+        const data = await fetchData();
+        const pendingCount = (data?.resumes || []).filter((r) => r.status === 'pending').length;
+        if (pendingCount === 0) break;
+        await new Promise((res) => setTimeout(res, 1000));
+      }
+      setAnalyzing(false);
     } catch (err) {
       toast.error(err.response?.data?.error || "Erreur d'analyse.");
       setAnalyzing(false);

@@ -5,7 +5,7 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
-  const { user, login, logout } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
 
   // ── Profil ──
@@ -427,7 +427,7 @@ export default function Settings() {
                   <h3 style={styles.prefSectionTitle}>📋 Informations du compte</h3>
                   <div style={styles.infoGrid}>
                     {[
-                      { label: 'Membre depuis', value: new Date(user?.created_at).toLocaleDateString('fr-FR') },
+                      { label: 'Membre depuis', value: user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '-' },
                       { label: 'Rôle', value: user?.role === 'admin' ? 'Administrateur' : 'Recruteur' },
                       { label: 'Statut', value: '✅ Actif' },
                       { label: 'Version', value: 'SmartRecruit v1.0' },
