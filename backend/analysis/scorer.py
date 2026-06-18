@@ -1,12 +1,14 @@
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 import re
 
-# Chargement du modèle (une seule fois au démarrage)
-print("Chargement du modèle NLP...")
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-print("Modèle chargé ✅")
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+    return _model
 
 
 def extract_skills_from_text(text, required_skills):
@@ -33,6 +35,7 @@ def extract_skills_from_text(text, required_skills):
             continue
 
         # Vérification sémantique
+        model = get_model()
         skill_emb = model.encode([skill_lower])
         
         # Découper le texte en phrases pour comparaison
@@ -102,6 +105,7 @@ def calculate_score_semantic(cv_text, job_description):
     cv_short = cv_text[:2000]
     job_short = job_description[:1000]
 
+    model = get_model()
     embeddings = model.encode([cv_short, job_short])
     similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
 
