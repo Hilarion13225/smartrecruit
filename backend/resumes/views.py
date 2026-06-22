@@ -70,3 +70,20 @@ class AnalyzeResumesView(APIView):
         return Response({
             "message": f"Analyse lancée pour {resumes.count()} CV.",
         })
+        
+class ResumeDeleteView(APIView):
+    """Supprime un CV uploadé"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, resume_id):
+        resume = get_object_or_404(
+            Resume,
+            id=resume_id,
+            job__recruiter=request.user
+        )
+        resume.cv_file.delete(save=False)  # supprime le fichier physique
+        resume.delete()  # supprime l'entrée en base
+        return Response(
+            {"message": "CV supprimé avec succès."},
+            status=status.HTTP_204_NO_CONTENT
+        )

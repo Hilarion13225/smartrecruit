@@ -21,4 +21,6 @@ export const resumesAPI = {
 
   exportPDF: (jobId) =>
     api.get(`/jobs/${jobId}/export/pdf/`, { responseType: 'blob' }),
+
+  delete: (resumeId) => api.delete(`/resumes/${resumeId}/delete/`),
 };
