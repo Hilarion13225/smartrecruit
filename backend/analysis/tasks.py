@@ -65,8 +65,13 @@ def analyze_resume(resume_id):
         raw_text = extract_text_from_pdf(tmp_path)
         os.unlink(tmp_path)
 
-        if not raw_text:
-            raise ValueError("Impossible d'extraire le texte du PDF.")
+        if not raw_text or len(raw_text.strip()) < 50:
+            # PDF scanné ou vide — on met un statut spécial
+            resume.status = 'error'
+            resume.raw_text = ''
+            resume.save()
+            print(f"  ⚠️ PDF scanné ou illisible — analyse impossible")
+            return  # On continue avec les autres CVs sans bloquer
 
         resume.raw_text = raw_text
         clean = clean_text(raw_text)

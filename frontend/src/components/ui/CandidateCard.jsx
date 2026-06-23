@@ -306,7 +306,18 @@ export default function CandidateCard({ resume, rank, onDelete }) {
             </div>
           )}
         </div>
-
+        {resume.status === 'error' && (
+          <div style={{
+            padding: '8px 14px',
+            background: '#FEF3C7',
+            borderRadius: '8px',
+            fontSize: '12px',
+            color: '#92400E',
+            textAlign: 'center',
+          }}>
+            ⚠️ PDF scanné — texte non extractible
+          </div>
+        )}
       </div>
     </>
   );
