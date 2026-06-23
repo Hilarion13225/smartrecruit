@@ -4,112 +4,334 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import {
+  Briefcase, FileText, Bot, Star,
+  Plus, ArrowRight, Clock, Users, BarChart2,
+} from 'lucide-react';
+import {
   RadialBarChart, RadialBar, ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip, Legend,
 } from 'recharts';
-
+ 
+const css = `
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .dash-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 0 0 4px;
+  }
+  .dash-subtitle {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0;
+  }
+  .new-job-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #4F46E5;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .new-job-btn:hover { background: #4338CA; }
+ 
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .stat-icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1F2937;
+    margin: 0 0 2px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: #6B7280;
+    margin: 0;
+  }
+ 
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 0 0 16px;
+  }
+  .score-center { position: relative; }
+  .score-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -20%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .score-number {
+    display: block;
+    font-size: 32px;
+    font-weight: 800;
+    color: #1F2937;
+  }
+  .score-sub {
+    font-size: 13px;
+    color: #9CA3AF;
+  }
+  .no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9CA3AF;
+    font-size: 14px;
+    font-style: italic;
+  }
+  .recent-list { display: flex; flex-direction: column; gap: 8px; }
+  .recent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #F9FAFB;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    gap: 8px;
+  }
+  .recent-item:hover { background: #F1F5F9; }
+  .recent-title { font-size: 13px; font-weight: 600; color: #1F2937; margin: 0 0 2px; }
+  .recent-meta { font-size: 11px; color: #9CA3AF; margin: 0; }
+  .recent-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .see-all-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 12px;
+    background: none;
+    border: none;
+    color: #4F46E5;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: gap 0.15s;
+  }
+  .see-all-btn:hover { gap: 8px; }
+ 
+  .empty-state {
+    background: #fff;
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: #EEF2FF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .empty-title { font-size: 18px; font-weight: 700; color: #1F2937; margin: 0 0 8px; }
+  .empty-text { font-size: 14px; color: #6B7280; max-width: 360px; margin: 0 auto 24px; }
+ 
+  .loading-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: #6B7280;
+    font-size: 15px;
+    gap: 10px;
+  }
+ 
+  @media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    .charts-row { grid-template-columns: 1fr; gap: 16px; }
+    .dash-title { font-size: 20px; }
+  }
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-card { padding: 14px; gap: 12px; }
+    .stat-icon-wrap { width: 42px; height: 42px; }
+    .stat-value { font-size: 22px; }
+    .card { padding: 16px; }
+    .empty-state { padding: 40px 20px; }
+  }
+`;
+ 
+const STAT_CARDS = (stats) => [
+  { icon: <Briefcase size={22} />, label: 'Offres actives',  value: stats.total_jobs,           color: '#4F46E5', bg: '#EEF2FF' },
+  { icon: <FileText  size={22} />, label: 'CV importés',     value: stats.total_resumes,         color: '#6366F1', bg: '#EEF2FF' },
+  { icon: <Bot       size={22} />, label: 'CV analysés',     value: stats.analyzed_resumes,      color: '#10B981', bg: '#D1FAE5' },
+  { icon: <Star      size={22} />, label: 'Prioritaires',    value: stats.priority_candidates,   color: '#F59E0B', bg: '#FEF3C7' },
+];
+ 
+const PIE_DATA = (stats) => [
+  { name: 'Prioritaire', value: stats.priority_candidates, color: '#10B981' },
+  { name: 'Possible',    value: stats.possible_candidates, color: '#4F46E5' },
+  { name: 'Réserve',     value: stats.reserve_candidates,  color: '#F59E0B' },
+  { name: 'Rejeté',      value: stats.rejected_candidates, color: '#EF4444' },
+].filter((d) => d.value > 0);
+ 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-
+ 
   useEffect(() => {
     api.get('/auth/dashboard/stats/')
       .then((res) => setStats(res.data))
       .catch(() => toast.error('Erreur chargement stats'))
       .finally(() => setLoading(false));
   }, []);
-
-  const pieData = stats ? [
-    { name: 'Prioritaire', value: stats.priority_candidates, color: '#10B981' },
-    { name: 'Possible', value: stats.possible_candidates, color: '#4F46E5' },
-    { name: 'Réserve', value: stats.reserve_candidates, color: '#F59E0B' },
-    { name: 'Rejeté', value: stats.rejected_candidates, color: '#EF4444' },
-  ].filter((d) => d.value > 0) : [];
-
-  const statCards = stats ? [
-    { icon: '💼', label: 'Offres actives', value: stats.total_jobs, color: '#4F46E5' },
-    { icon: '📄', label: 'CV importés', value: stats.total_resumes, color: '#6366F1' },
-    { icon: '🤖', label: 'CV analysés', value: stats.analyzed_resumes, color: '#10B981' },
-    { icon: '⭐', label: 'Prioritaires', value: stats.priority_candidates, color: '#F59E0B' },
-  ] : [];
-
-  if (loading) return <div style={styles.loading}>Chargement...</div>;
-
+ 
+  if (loading) return (
+    <div className="loading-screen">
+      <Bot size={20} color="#4F46E5" />
+      Chargement...
+    </div>
+  );
+ 
+  const pieData   = stats ? PIE_DATA(stats)   : [];
+  const statCards = stats ? STAT_CARDS(stats) : [];
+ 
   return (
-    <div>
+    <>
+      <style>{css}</style>
+ 
       {/* Header */}
-      <div style={styles.header}>
+      <div className="dash-header">
         <div>
-          <h1 style={styles.title}>
+          <h1 className="dash-title">
             Bonjour, {user?.first_name || user?.username} 👋
           </h1>
-          <p style={styles.subtitle}>
+          <p className="dash-subtitle">
             Voici un aperçu de votre activité de recrutement
           </p>
         </div>
-        <button
-          onClick={() => navigate('/jobs/new')}
-          style={styles.newJobBtn}
-        >
-          + Nouvelle offre
+        <button className="new-job-btn" onClick={() => navigate('/jobs/new')}>
+          <Plus size={16} />
+          Nouvelle offre
         </button>
       </div>
-
-      {/* Stats cards */}
-      <div style={styles.statsGrid}>
-        {statCards.map((stat) => (
-          <div key={stat.label} style={styles.statCard}>
-            <div style={{
-              ...styles.statIcon,
-              background: stat.color + '20',
-            }}>
-              <span style={{ fontSize: '24px' }}>{stat.icon}</span>
+ 
+      {/* Stat cards */}
+      <div className="stats-grid">
+        {statCards.map((s) => (
+          <div key={s.label} className="stat-card">
+            <div className="stat-icon-wrap" style={{ background: s.bg, color: s.color }}>
+              {s.icon}
             </div>
             <div>
-              <p style={styles.statValue}>{stat.value}</p>
-              <p style={styles.statLabel}>{stat.label}</p>
+              <p className="stat-value">{s.value}</p>
+              <p className="stat-label">{s.label}</p>
             </div>
           </div>
         ))}
       </div>
-
-      <div style={styles.row}>
+ 
+      {/* Charts row */}
+      <div className="charts-row">
+ 
         {/* Score moyen */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>📊 Score moyen des candidats</h3>
+        <div className="card">
+          <h3 className="card-title">
+            <BarChart2 size={17} color="#4F46E5" />
+            Score moyen des candidats
+          </h3>
           {stats?.average_score > 0 ? (
-            <div style={styles.scoreCenter}>
+            <div className="score-center">
               <ResponsiveContainer width="100%" height={200}>
                 <RadialBarChart
                   innerRadius="60%"
                   outerRadius="100%"
-                  data={[{
-                    value: Math.round(stats.average_score),
-                    fill: '#4F46E5'
-                  }]}
+                  data={[{ value: Math.round(stats.average_score), fill: '#4F46E5' }]}
                   startAngle={180}
                   endAngle={0}
                 >
                   <RadialBar dataKey="value" cornerRadius={10} />
                 </RadialBarChart>
               </ResponsiveContainer>
-              <div style={styles.scoreOverlay}>
-                <span style={styles.scoreNumber}>
-                  {Math.round(stats.average_score)}
-                </span>
-                <span style={styles.scoreLabel}>/100</span>
+              <div className="score-overlay">
+                <span className="score-number">{Math.round(stats.average_score)}</span>
+                <span className="score-sub">/100</span>
               </div>
             </div>
           ) : (
-            <div style={styles.noData}>Aucune analyse disponible</div>
+            <div className="no-data">Aucune analyse disponible</div>
           )}
         </div>
-
+ 
         {/* Répartition candidats */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>👥 Répartition des candidats</h3>
+        <div className="card">
+          <h3 className="card-title">
+            <Users size={17} color="#4F46E5" />
+            Répartition des candidats
+          </h3>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -122,300 +344,73 @@ export default function Dashboard() {
                   paddingAngle={3}
                   dataKey="value"
                 >
-                  {pieData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} candidat(s)`]} />
+                <Tooltip formatter={(v) => [`${v} candidat(s)`]} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div style={styles.noData}>Aucune analyse disponible</div>
+            <div className="no-data">Aucune analyse disponible</div>
           )}
         </div>
-
+ 
         {/* Offres récentes */}
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>🕐 Offres récentes</h3>
+        <div className="card">
+          <h3 className="card-title">
+            <Clock size={17} color="#4F46E5" />
+            Offres récentes
+          </h3>
           {stats?.recent_jobs?.length === 0 ? (
-            <div style={styles.noData}>Aucune offre créée</div>
+            <div className="no-data">Aucune offre créée</div>
           ) : (
-            <div style={styles.recentList}>
+            <div className="recent-list">
               {stats?.recent_jobs?.map((job) => (
                 <div
                   key={job.id}
-                  style={styles.recentItem}
+                  className="recent-item"
                   onClick={() => navigate(`/jobs/${job.id}`)}
                 >
-                  <div style={styles.recentInfo}>
-                    <p style={styles.recentTitle}>{job.title}</p>
-                    <p style={styles.recentMeta}>
-                      {job.analyzed_count}/{job.resumes_count} CV analysés
-                    </p>
+                  <div>
+                    <p className="recent-title">{job.title}</p>
+                    <p className="recent-meta">{job.analyzed_count}/{job.resumes_count} CV analysés</p>
                   </div>
-                  <div style={{
-                    ...styles.recentBadge,
-                    background: job.status === 'active' ? '#D1FAE5' : '#FEF3C7',
-                    color: job.status === 'active' ? '#065F46' : '#92400E',
-                  }}>
+                  <span
+                    className="recent-badge"
+                    style={job.status === 'active'
+                      ? { background: '#D1FAE5', color: '#065F46' }
+                      : { background: '#FEF3C7', color: '#92400E' }}
+                  >
                     {job.status === 'active' ? 'Active' : 'Brouillon'}
-                  </div>
+                  </span>
                 </div>
               ))}
             </div>
           )}
-          <button
-            onClick={() => navigate('/jobs')}
-            style={styles.seeAllBtn}
-          >
-            Voir toutes les offres →
+          <button className="see-all-btn" onClick={() => navigate('/jobs')}>
+            Voir toutes les offres <ArrowRight size={14} />
           </button>
         </div>
       </div>
-
-      {/* Actions rapides */}
+ 
+      {/* Empty state */}
       {stats?.total_resumes === 0 && (
-        <div style={styles.emptyState}>
-          <span style={{ fontSize: '48px' }}>🚀</span>
-          <h3 style={styles.emptyTitle}>
-            Commencez votre premier recrutement
-          </h3>
-          <p style={styles.emptyText}>
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Briefcase size={28} color="#4F46E5" />
+          </div>
+          <h3 className="empty-title">Commencez votre premier recrutement</h3>
+          <p className="empty-text">
             Créez une offre, importez des CV et laissez l'IA faire le tri !
           </p>
-          <button
-            onClick={() => navigate('/jobs/new')}
-            style={styles.newJobBtn}
-          >
+          <button className="new-job-btn" onClick={() => navigate('/jobs/new')}>
+            <Plus size={16} />
             Créer une offre
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }
-
-const styles = {
-  loading: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '60vh',
-    color: '#6B7280',
-    fontSize: '16px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '28px',
-    flexWrap: 'wrap',
-    gap: '16px',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#1F2937',
-    '@media (max-width: 640px)': { fontSize: '20px' },
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#6B7280',
-    marginTop: '4px',
-  },
-  newJobBtn: {
-    padding: '10px 20px',
-    background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 640px)': {
-      padding: '8px 16px',
-      fontSize: '12px',
-    },
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '16px',
-    marginBottom: '24px',
-    '@media (max-width: 1024px)': {
-      gridTemplateColumns: 'repeat(2, 1fr)',
-    },
-    '@media (max-width: 640px)': {
-      gridTemplateColumns: '1fr',
-      gap: '12px',
-    },
-  },
-  statCard: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    '@media (max-width: 640px)': {
-      padding: '16px',
-    },
-  },
-  statIcon: {
-    width: '52px',
-    height: '52px',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  statValue: {
-    fontSize: '26px',
-    fontWeight: '800',
-    color: '#1F2937',
-    '@media (max-width: 640px)': {
-      fontSize: '22px',
-    },
-  },
-  statLabel: {
-    fontSize: '12px',
-    color: '#6B7280',
-    marginTop: '2px',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: '20px',
-    marginBottom: '24px',
-    '@media (max-width: 1024px)': {
-      gridTemplateColumns: '1fr 1fr',
-    },
-    '@media (max-width: 768px)': {
-      gridTemplateColumns: '1fr',
-      gap: '16px',
-    },
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '20px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    '@media (max-width: 640px)': {
-      padding: '16px',
-    },
-  },
-  cardTitle: {
-    fontSize: '15px',
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: '16px',
-    '@media (max-width: 640px)': {
-      fontSize: '14px',
-    },
-  },
-  scoreCenter: {
-    position: 'relative',
-  },
-  scoreOverlay: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -20%)',
-    textAlign: 'center',
-  },
-  scoreNumber: {
-    fontSize: '32px',
-    fontWeight: '800',
-    color: '#1F2937',
-    '@media (max-width: 640px)': {
-      fontSize: '24px',
-    },
-  },
-  scoreLabel: {
-    fontSize: '14px',
-    color: '#9CA3AF',
-  },
-  noData: {
-    textAlign: 'center',
-    padding: '40px',
-    color: '#9CA3AF',
-    fontSize: '14px',
-    fontStyle: 'italic',
-  },
-  recentList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  recentItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px 12px',
-    background: '#F9FAFB',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'background 0.2s',
-    gap: '8px',
-    '@media (max-width: 640px)': {
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-    },
-  },
-  recentInfo: {},
-  recentTitle: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  recentMeta: {
-    fontSize: '11px',
-    color: '#9CA3AF',
-    marginTop: '2px',
-  },
-  recentBadge: {
-    padding: '3px 10px',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '600',
-  },
-  seeAllBtn: {
-    marginTop: '12px',
-    background: 'none',
-    border: 'none',
-    color: '#4F46E5',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    padding: 0,
-  },
-  emptyState: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '60px',
-    textAlign: 'center',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    '@media (max-width: 640px)': {
-      padding: '40px 20px',
-    },
-  },
-  emptyTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#1F2937',
-    margin: '16px 0 8px',
-    '@media (max-width: 640px)': {
-      fontSize: '16px',
-    },
-  },
-  emptyText: {
-    fontSize: '14px',
-    color: '#6B7280',
-    maxWidth: '400px',
-    margin: '0 auto 24px',
-  },
-};

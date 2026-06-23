@@ -1,6 +1,166 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import {
+  LayoutDashboard, Briefcase, Settings, ShieldCheck,
+  Target, LogOut, X,
+} from 'lucide-react';
+
+const css = `
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: #1F2937;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 50;
+    transition: transform 0.3s ease;
+  }
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 8px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: #4F46E5;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-text {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .close-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #9CA3AF;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s;
+  }
+  .close-btn:hover { color: #fff; }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #9CA3AF;
+    font-size: 14px;
+    font-weight: 500;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .menu-item:hover { background: #374151; color: #fff; }
+  .menu-item.active { background: #4F46E5; color: #fff; }
+  .sidebar-bottom { margin-top: auto; }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #374151;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #4F46E5;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .user-name {
+    color: #F9FAFB;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .user-role {
+    color: #9CA3AF;
+    font-size: 11px;
+    margin: 2px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background: transparent;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #9CA3AF;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .logout-btn:hover {
+    background: #374151;
+    color: #fff;
+    border-color: #4B5563;
+  }
+
+  /* Overlay mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .close-btn { display: flex; }
+    .sidebar-overlay.open { display: block; }
+  }
+`;
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
@@ -19,215 +179,71 @@ export default function Sidebar({ isOpen, onClose }) {
   };
 
   const menuItems = [
-    { icon: '🏠', label: 'Dashboard', path: '/dashboard' },
-    { icon: '💼', label: 'Mes offres', path: '/jobs' },
-    { icon: '⚙️', label: 'Paramètres', path: '/settings' },
+    { icon: <LayoutDashboard size={18} />, label: 'Dashboard',     path: '/dashboard' },
+    { icon: <Briefcase       size={18} />, label: 'Mes offres',    path: '/jobs' },
+    { icon: <Settings        size={18} />, label: 'Paramètres',    path: '/settings' },
     ...(user?.role === 'admin' ? [
-      { icon: '🛡️', label: 'Administration', path: '/admin' },
+      { icon: <ShieldCheck   size={18} />, label: 'Administration', path: '/admin' },
     ] : []),
   ];
 
   return (
-    <aside style={{
-      ...styles.sidebar,
-      ...(isOpen ? styles.sidebarOpen : styles.sidebarClosed),
-    }}>
-      {/* Header avec bouton fermer */}
-      <div style={styles.header}>
-        <div style={styles.logo}>
-          <span style={{ fontSize: '24px' }}>🎯</span>
-          <span style={styles.logoText}>SmartRecruit</span>
-        </div>
-        <button
-          onClick={onClose}
-          style={styles.closeBtn}
-        >
-          ✕
-        </button>
-      </div>
+    <>
+      <style>{css}</style>
 
-      {/* Menu */}
-      <nav style={styles.nav}>
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
+      {/* Overlay mobile */}
+      <div
+        className={`sidebar-overlay${isOpen ? ' open' : ''}`}
+        onClick={onClose}
+      />
+
+      <aside className={`sidebar${isOpen ? ' open' : ''}`}>
+
+        {/* Header */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="logo-icon">
+              <Target size={20} color="#fff" />
+            </div>
+            <span className="logo-text">SmartRecruit</span>
+          </div>
+          <button className="close-btn" onClick={onClose} aria-label="Fermer le menu">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="sidebar-nav">
+          {menuItems.map((item) => (
             <button
               key={item.path}
               onClick={() => handleNavigation(item.path)}
-              style={{
-                ...styles.menuItem,
-                ...(isActive ? styles.menuItemActive : {}),
-              }}
+              className={`menu-item${location.pathname === item.path ? ' active' : ''}`}
             >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+              {item.icon}
+              {item.label}
             </button>
-          );
-        })}
-      </nav>
+          ))}
+        </nav>
 
-      {/* User info + logout */}
-      <div style={styles.bottom}>
-        <div style={styles.userInfo}>
-          <div style={styles.avatar}>
-            {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+        {/* Bottom */}
+        <div className="sidebar-bottom">
+          <div className="user-info">
+            <div className="avatar">
+              {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p className="user-name">{user?.first_name} {user?.last_name}</p>
+              <p className="user-role">{user?.company || 'Recruteur'}</p>
+            </div>
           </div>
-          <div style={styles.userDetails}>
-            <p style={styles.userName}>
-              {user?.first_name} {user?.last_name}
-            </p>
-            <p style={styles.userRole}>{user?.company || 'Recruteur'}</p>
-          </div>
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogOut size={15} />
+            Déconnexion
+          </button>
         </div>
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          🚪 Déconnexion
-        </button>
-      </div>
-    </aside>
+
+      </aside>
+    </>
   );
 }
-
-const styles = {
-  sidebar: {
-    width: '240px',
-    minHeight: '100vh',
-    background: '#1F2937',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '24px 16px',
-    position: 'fixed',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 50,
-    transition: 'transform 0.3s ease',
-    '@media (max-width: 768px)': {
-      width: '250px',
-    },
-  },
-  sidebarOpen: {
-    transform: 'translateX(0)',
-  },
-  sidebarClosed: {
-    '@media (max-width: 768px)': {
-      transform: 'translateX(-100%)',
-    },
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '36px',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    paddingLeft: '8px',
-  },
-  logoText: {
-    color: '#fff',
-    fontSize: '18px',
-    fontWeight: '700',
-    '@media (max-width: 640px)': {
-      display: 'none',
-    },
-  },
-  closeBtn: {
-    display: 'none',
-    background: 'transparent',
-    border: 'none',
-    color: '#fff',
-    fontSize: '20px',
-    cursor: 'pointer',
-    padding: '4px 8px',
-    '@media (max-width: 768px)': {
-      display: 'block',
-    },
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-    flex: 1,
-  },
-  menuItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: 'none',
-    background: 'transparent',
-    color: '#9CA3AF',
-    fontSize: '14px',
-    fontWeight: '500',
-    width: '100%',
-    textAlign: 'left',
-    transition: 'all 0.2s',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  menuItemActive: {
-    background: '#4F46E5',
-    color: '#fff',
-  },
-  bottom: {
-    marginTop: 'auto',
-  },
-  userInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '12px',
-    background: '#374151',
-    borderRadius: '8px',
-    marginBottom: '8px',
-  },
-  userDetails: {
-    minWidth: 0,
-    flex: 1,
-  },
-  avatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    background: '#4F46E5',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '14px',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    flexShrink: 0,
-  },
-  userName: {
-    color: '#F9FAFB',
-    fontSize: '13px',
-    fontWeight: '600',
-    margin: '0',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  userRole: {
-    color: '#9CA3AF',
-    fontSize: '11px',
-    margin: '2px 0 0 0',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  logoutBtn: {
-    width: '100%',
-    padding: '8px',
-    background: 'transparent',
-    border: '1px solid #374151',
-    borderRadius: '8px',
-    color: '#9CA3AF',
-    fontSize: '13px',
-    transition: 'all 0.2s',
-    cursor: 'pointer',
-  },
-};

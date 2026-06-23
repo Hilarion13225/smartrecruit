@@ -2,16 +2,72 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { Brain, User, Lock, Eye, EyeOff } from 'lucide-react';
+
+const styles = `
+  .login-side {
+    width: 380px;
+    min-height: 100vh;
+    flex-shrink: 0;
+  }
+  .login-side-inner {
+    padding: 40px;
+  }
+  .login-logo {
+    width: 80px;
+    height: 80px;
+  }
+  .login-title {
+    font-size: 26px;
+  }
+  .login-side-desc {
+    display: block;
+  }
+  .login-form-wrap {
+    padding: 40px;
+  }
+  .login-form-title {
+    font-size: 28px;
+  }
+
+  @media (max-width: 768px) {
+    .login-wrap {
+      flex-direction: column !important;
+    }
+    .login-side {
+      width: 100% !important;
+      min-height: unset !important;
+    }
+    .login-side-inner {
+      padding: 30px 20px;
+    }
+    .login-logo {
+      width: 60px;
+      height: 60px;
+    }
+    .login-title {
+      font-size: 22px;
+    }
+    .login-side-desc {
+      display: none;
+    }
+    .login-form-wrap {
+      padding: 30px 20px;
+    }
+    .login-form-title {
+      font-size: 22px;
+    }
+  }
+`;
 
 export default function Login() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +76,7 @@ export default function Login() {
       await login(form);
       toast.success('Connexion réussie !');
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       toast.error('Identifiants incorrects.');
     } finally {
       setLoading(false);
@@ -28,135 +84,78 @@ export default function Login() {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
+    <>
+      <style>{styles}</style>
 
-        {/* Logo */}
-        <div style={styles.logo}>
-          <span style={styles.logoIcon}>🎯</span>
-          <h1 style={styles.logoText}>SmartRecruit</h1>
+      <div className="login-wrap" style={{ display: 'flex', flexDirection: 'row', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+
+        {/* Panneau gauche */}
+        <div className="login-side" style={{ background: 'linear-gradient(160deg, #1E2D45 0%, #0F1E33 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="login-side-inner" style={{ textAlign: 'center', color: '#fff' }}>
+            <div className="login-logo" style={{ background: 'linear-gradient(135deg, #4F46E5, #7C3AED)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(79,70,229,0.4)' }}>
+              <Brain size={36} color="#fff" />
+            </div>
+            <h1 className="login-title" style={{ fontWeight: '800', color: '#fff', marginBottom: '8px' }}>SmartRecruit</h1>
+            <p className="login-side-desc" style={{ fontSize: '14px', color: '#94A3B8', lineHeight: '1.6', maxWidth: '260px', margin: '0 auto' }}>
+              Recrutez plus intelligemment grâce à l'analyse IA de CV.
+            </p>
+          </div>
         </div>
 
-        <h2 style={styles.title}>Connexion</h2>
-        <p style={styles.subtitle}>Accédez à votre espace recruteur</p>
+        {/* Panneau droit */}
+        <div className="login-form-wrap" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+          <div style={{ width: '100%', maxWidth: '420px' }}>
+            <h2 className="login-form-title" style={{ fontWeight: '800', color: '#1E2D45', marginBottom: '6px' }}>Bienvenue !</h2>
+            <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '32px' }}>Connectez-vous à votre espace recruteur.</p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.field}>
-            <label style={styles.label}>Nom d'utilisateur</label>
-            <input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              placeholder="Votre username"
-              required
-              style={styles.input}
-            />
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+              {/* Username */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', letterSpacing: '0.08em' }}>NOM D'UTILISATEUR</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #E2E8F0', borderRadius: '10px', background: '#fff', padding: '0 14px', gap: '10px' }}>
+                  <User size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+                  <input name="username" value={form.username} onChange={handleChange} placeholder="Votre username" required
+                    style={{ flex: 1, border: 'none', outline: 'none', padding: '13px 0', fontSize: '14px', color: '#1E2D45', background: 'transparent' }} />
+                </div>
+              </div>
+
+              {/* Mot de passe */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', letterSpacing: '0.08em' }}>MOT DE PASSE</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #E2E8F0', borderRadius: '10px', background: '#fff', padding: '0 14px', gap: '10px' }}>
+                  <Lock size={16} color="#94A3B8" style={{ flexShrink: 0 }} />
+                  <input name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={handleChange} placeholder="••••••••" required
+                    style={{ flex: 1, border: 'none', outline: 'none', padding: '13px 0', fontSize: '14px', color: '#1E2D45', background: 'transparent' }} />
+                  <span onClick={() => setShowPassword(!showPassword)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    {showPassword ? <EyeOff size={16} color="#94A3B8" /> : <Eye size={16} color="#94A3B8" />}
+                  </span>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading}
+                style={{ padding: '14px', background: 'linear-gradient(135deg, #1E2D45, #2D4263)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
+                {loading ? 'Connexion...' : 'Se connecter'}
+              </button>
+            </form>
+
+            {/* Lien register */}
+            <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#64748B' }}>
+              Pas encore de compte ?{' '}
+              <a
+                href="/register"
+                style={{ color: '#4F46E5', fontWeight: '700', textDecoration: 'none' }}
+              >
+                Créer un compte
+              </a>
+            </p>
+
+            <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '12px', color: '#94A3B8' }}>
+              © 2026 SmartRecruit • Propulsé par l'IA
+            </p>
           </div>
-
-          <div style={styles.field}>
-            <label style={styles.label}>Mot de passe</label>
-            <input
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              style={styles.input}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              ...styles.button,
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {loading ? 'Connexion...' : 'Se connecter'}
-          </button>
-        </form>
-
-        <p style={styles.footer}>
-          Pas encore de compte ?{' '}
-          <a href="/register" style={styles.link}>S'inscrire</a>
-        </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
-    padding: '20px',
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '40px',
-    width: '100%',
-    maxWidth: '420px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '28px',
-    justifyContent: 'center',
-  },
-  logoIcon: { fontSize: '32px' },
-  logoText: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#4F46E5',
-  },
-  title: {
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: '6px',
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: '28px',
-  },
-  form: { display: 'flex', flexDirection: 'column', gap: '18px' },
-  field: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  label: { fontSize: '14px', fontWeight: '500', color: '#374151' },
-  input: {
-    padding: '10px 14px',
-    border: '1.5px solid #E5E7EB',
-    borderRadius: '8px',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-  },
-  button: {
-    padding: '12px',
-    background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '15px',
-    fontWeight: '600',
-    marginTop: '8px',
-    transition: 'opacity 0.2s',
-  },
-  footer: {
-    textAlign: 'center',
-    marginTop: '20px',
-    fontSize: '14px',
-    color: '#6B7280',
-  },
-  link: { color: '#4F46E5', fontWeight: '600' },
-};

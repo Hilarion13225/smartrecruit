@@ -3,16 +3,270 @@ import { useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../../api/jobs';
 import toast from 'react-hot-toast';
 import ImportJobModal from '../../components/ui/ImportJobModal';
+import {
+  Search, Plus, FolderOpen, Briefcase,
+  GraduationCap, Clock, FileText, Users,
+  Pencil, Trash2, BarChart2,
+} from 'lucide-react';
+
+const css = `
+  .jobs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .jobs-title-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .jobs-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1E2D45;
+    margin: 0 0 2px;
+  }
+  .jobs-subtitle {
+    font-size: 13px;
+    color: #94A3B8;
+    margin: 0;
+  }
+  .jobs-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn-import {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4F46E5;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .btn-import:hover { background: #F8FAFC; border-color: #C7D2FE; }
+  .btn-new {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    background: #1E2D45;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  .btn-new:hover { background: #2D4263; }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    transition: border-color 0.15s;
+  }
+  .search-bar:focus-within { border-color: #4F46E5; }
+  .search-bar input {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    flex: 1;
+    color: #1E2D45;
+    background: transparent;
+  }
+  .search-bar input::placeholder { color: #CBD5E1; }
+
+  .jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .job-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid #F1F5F9;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .job-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .card-date { font-size: 12px; color: #94A3B8; }
+  .job-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E2D45;
+    margin: 0;
+    line-height: 1.3;
+  }
+  .info-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .info-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #64748B;
+  }
+  .skills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .skill-tag {
+    padding: 3px 10px;
+    background: #EEF2FF;
+    color: #4F46E5;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+  .btn-candidates {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 12px;
+    background: #4F46E5;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-candidates:hover { background: #4338CA; }
+  .btn-edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 12px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    color: #64748B;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-edit:hover { background: #EEF2FF; color: #4F46E5; border-color: #C7D2FE; }
+  .btn-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 12px;
+    background: #FFF5F5;
+    border: 1px solid #FED7D7;
+    border-radius: 8px;
+    color: #E53E3E;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-delete:hover { background: #FED7D7; }
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 80px;
+    color: #94A3B8;
+    font-size: 14px;
+  }
+  .empty-state {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #F1F5F9;
+    padding: 64px 40px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 64px;
+    height: 64px;
+    background: #EEF2FF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .empty-title { font-size: 18px; font-weight: 700; color: #1E2D45; margin: 0 0 8px; }
+  .empty-text { font-size: 14px; color: #94A3B8; max-width: 360px; margin: 0 auto 24px; }
+
+  @media (max-width: 640px) {
+    .jobs-header { flex-direction: column; align-items: flex-start; }
+    .jobs-actions { width: 100%; }
+    .btn-import, .btn-new { flex: 1; justify-content: center; }
+    .jobs-grid { grid-template-columns: 1fr; gap: 12px; }
+    .jobs-title { font-size: 20px; }
+    .job-card { padding: 16px; }
+  }
+`;
+
+const STATUS = {
+  active: { bg: '#D1FAE5', color: '#065F46', label: 'Active' },
+  draft:  { bg: '#FEF3C7', color: '#92400E', label: 'Brouillon' },
+  closed: { bg: '#FEE2E2', color: '#991B1B', label: 'Fermée' },
+};
 
 export default function JobList() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showImport, setShowImport] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  useEffect(() => { fetchJobs(); }, []);
 
   const fetchJobs = async () => {
     try {
@@ -40,139 +294,108 @@ export default function JobList() {
     j.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const statusColors = {
-    active: { bg: '#D1FAE5', color: '#065F46', label: 'Active' },
-    draft: { bg: '#FEF3C7', color: '#92400E', label: 'Brouillon' },
-    closed: { bg: '#FEE2E2', color: '#991B1B', label: 'Fermée' },
-  };
-
-  const [showImport, setShowImport] = useState(false);
-
   return (
-    <div>
+    <>
+      <style>{css}</style>
+
       {/* Header */}
-      <div style={styles.header}>
+      <div className="jobs-header">
         <div>
-          <h1 style={styles.title}>Mes offres d'emploi</h1>
-          <p style={styles.subtitle}>{jobs.length} offre(s) au total</p>
+          <p className="jobs-title-label">Recrutement</p>
+          <h1 className="jobs-title">Mes offres d'emploi</h1>
+          <p className="jobs-subtitle">{jobs.length} offre{jobs.length !== 1 ? 's' : ''} au total</p>
         </div>
-        <button
-          onClick={() => navigate('/jobs/new')}
-          style={styles.newBtn}
-        >
-          + Nouvelle offre
-        </button>
-        <div style={{ display: 'flex', gap: '10px' }}>
-        <button
-          onClick={() => setShowImport(true)}
-          style={styles.importBtn}
-        >
-          📂 Importer une offre
-        </button>
-        <button
-          onClick={() => navigate('/jobs/new')}
-          style={styles.newBtn}
-        >
-          + Nouvelle offre
-        </button>
-      </div>
+        <div className="jobs-actions">
+          <button className="btn-import" onClick={() => setShowImport(true)}>
+            <FolderOpen size={15} /> Importer une offre
+          </button>
+          <button className="btn-new" onClick={() => navigate('/jobs/new')}>
+            <Plus size={15} /> Nouvelle offre
+          </button>
+        </div>
       </div>
 
-      {/* Barre de recherche */}
-      <div style={styles.searchBar}>
-        <span style={styles.searchIcon}>🔍</span>
+      {/* Search */}
+      <div className="search-bar">
+        <Search size={16} color="#CBD5E1" />
         <input
           placeholder="Rechercher une offre..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={styles.searchInput}
         />
       </div>
 
-      {/* Liste */}
+      {/* States */}
       {loading ? (
-        <div style={styles.loading}>Chargement...</div>
+        <div className="loading-state">
+          <Briefcase size={18} color="#CBD5E1" /> Chargement...
+        </div>
       ) : filteredJobs.length === 0 ? (
-        <div style={styles.empty}>
-          <span style={{ fontSize: '48px' }}>💼</span>
-          <h3 style={styles.emptyTitle}>Aucune offre trouvée</h3>
-          <p style={styles.emptyText}>
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Briefcase size={28} color="#4F46E5" />
+          </div>
+          <h3 className="empty-title">Aucune offre trouvée</h3>
+          <p className="empty-text">
             Créez votre première offre pour commencer à analyser des CV.
           </p>
-          <button
-            onClick={() => navigate('/jobs/new')}
-            style={styles.newBtn}
-          >
-            Créer une offre
+          <button className="btn-new" onClick={() => navigate('/jobs/new')}>
+            <Plus size={15} /> Créer une offre
           </button>
         </div>
       ) : (
-        <div style={styles.grid}>
+        <div className="jobs-grid">
           {filteredJobs.map((job) => {
-            const status = statusColors[job.status];
+            const status = STATUS[job.status] || STATUS.draft;
             return (
-              <div key={job.id} style={styles.card}>
-                {/* Status badge */}
-                <div style={styles.cardHeader}>
-                  <span style={{
-                    ...styles.badge,
-                    background: status.bg,
-                    color: status.color,
-                  }}>
+              <div key={job.id} className="job-card">
+
+                <div className="card-top">
+                  <span className="status-badge" style={{ background: status.bg, color: status.color }}>
                     {status.label}
                   </span>
-                  <span style={styles.date}>
+                  <span className="card-date">
                     {new Date(job.created_at).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
 
-                {/* Titre */}
-                <h3 style={styles.jobTitle}>{job.title}</h3>
+                <h3 className="job-title">{job.title}</h3>
 
-                {/* Infos */}
-                <div style={styles.infoRow}>
-                  <span style={styles.info}>
-                    🎓 {job.required_education || 'Non précisé'}
+                <div className="info-row">
+                  <span className="info-chip">
+                    <GraduationCap size={13} color="#94A3B8" />
+                    {job.required_education || 'Non précisé'}
                   </span>
-                  <span style={styles.info}>
-                    ⏱️ {job.required_experience} an(s)
+                  <span className="info-chip">
+                    <Clock size={13} color="#94A3B8" />
+                    {job.required_experience} an(s)
                   </span>
-                  <span style={styles.info}>
-                    📄 {job.resumes_count} CV
+                  <span className="info-chip">
+                    <FileText size={13} color="#94A3B8" />
+                    {job.resumes_count} CV
                   </span>
                 </div>
 
-                {/* Compétences */}
-                <div style={styles.skills}>
-                  {job.required_skills.slice(0, 4).map((skill) => (
-                    <span key={skill} style={styles.skillTag}>{skill}</span>
-                  ))}
-                  {job.required_skills.length > 4 && (
-                    <span style={styles.skillTag}>
-                      +{job.required_skills.length - 4}
-                    </span>
-                  )}
-                </div>
+                {job.required_skills?.length > 0 && (
+                  <div className="skills-row">
+                    {job.required_skills.slice(0, 4).map((skill) => (
+                      <span key={skill} className="skill-tag">{skill}</span>
+                    ))}
+                    {job.required_skills.length > 4 && (
+                      <span className="skill-tag">+{job.required_skills.length - 4}</span>
+                    )}
+                  </div>
+                )}
 
-                {/* Actions */}
-                <div style={styles.actions}>
-                  <button
-                    onClick={() => navigate(`/jobs/${job.id}`)}
-                    style={styles.btnPrimary}
-                  >
-                    📊 Voir les candidats
+                <div className="card-actions">
+                  <button className="btn-candidates" onClick={() => navigate(`/jobs/${job.id}`)}>
+                    <BarChart2 size={14} /> Voir les candidats
                   </button>
-                  <button
-                    onClick={() => navigate(`/jobs/${job.id}/edit`)}
-                    style={styles.btnSecondary}
-                  >
-                    ✏️
+                  <button className="btn-edit" onClick={() => navigate(`/jobs/${job.id}/edit`)} title="Modifier">
+                    <Pencil size={14} />
                   </button>
-                  <button
-                    onClick={() => handleDelete(job.id)}
-                    style={styles.btnDanger}
-                  >
-                    🗑️
+                  <button className="btn-delete" onClick={() => handleDelete(job.id)} title="Supprimer">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -180,203 +403,10 @@ export default function JobList() {
           })}
         </div>
       )}
+
       {showImport && (
         <ImportJobModal onClose={() => { setShowImport(false); fetchJobs(); }} />
       )}
-    </div>
+    </>
   );
 }
-
-const styles = {
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '24px',
-    gap: '16px',
-    flexWrap: 'wrap',
-    '@media (max-width: 768px)': {
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-    },
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#1F2937',
-    '@media (max-width: 640px)': {
-      fontSize: '20px',
-    },
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#6B7280',
-    marginTop: '4px',
-  },
-  newBtn: {
-    padding: '10px 20px',
-    background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 768px)': {
-      padding: '8px 16px',
-      fontSize: '13px',
-    },
-  },
-  importBtn: {
-    padding: '10px 20px',
-    background: '#fff',
-    border: '1.5px solid #E5E7EB',
-    color: '#4F46E5',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    '@media (max-width: 768px)': {
-      padding: '8px 16px',
-      fontSize: '13px',
-    },
-  },
-  searchBar: {
-    display: 'flex', alignItems: 'center', gap: '10px',
-    background: '#fff', border: '1.5px solid #E5E7EB',
-    borderRadius: '10px', padding: '10px 16px', marginBottom: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-  },
-  searchIcon: { fontSize: '16px' },
-  searchInput: {
-    border: 'none', outline: 'none',
-    fontSize: '14px', flex: 1, color: '#374151',
-  },
-  loading: {
-    textAlign: 'center', padding: '60px',
-    color: '#6B7280', fontSize: '16px',
-  },
-  empty: {
-    background: '#fff', borderRadius: '16px',
-    padding: '60px', textAlign: 'center',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  },
-  emptyTitle: {
-    fontSize: '18px', fontWeight: '700',
-    color: '#1F2937', margin: '16px 0 8px',
-  },
-  emptyText: {
-    fontSize: '14px', color: '#6B7280',
-    maxWidth: '400px', margin: '0 auto 24px',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '16px',
-    '@media (max-width: 640px)': {
-      gridTemplateColumns: '1fr',
-      gap: '12px',
-    },
-  },
-  card: {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '16px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-    '@media (max-width: 640px)': {
-      padding: '12px',
-    },
-  },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '8px',
-    flexWrap: 'wrap',
-  },
-  badge: {
-    padding: '3px 10px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-  date: {
-    fontSize: '12px',
-    color: '#9CA3AF',
-  },
-  jobTitle: {
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#1F2937',
-    '@media (max-width: 640px)': {
-      fontSize: '14px',
-    },
-  },
-  infoRow: {
-    display: 'flex',
-    gap: '12px',
-    flexWrap: 'wrap',
-    '@media (max-width: 640px)': {
-      fontSize: '11px',
-      gap: '8px',
-    },
-  },
-  info: {
-    fontSize: '12px',
-    color: '#6B7280',
-  },
-  skills: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '6px',
-  },
-  skillTag: {
-    padding: '3px 8px',
-    background: '#EEF2FF',
-    color: '#4F46E5',
-    borderRadius: '20px',
-    fontSize: '11px',
-    fontWeight: '500',
-  },
-  actions: {
-    display: 'flex',
-    gap: '8px',
-    marginTop: '4px',
-  },
-  btnPrimary: {
-    flex: 1,
-    padding: '8px 12px',
-    background: '#4F46E5',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    '@media (max-width: 640px)': {
-      fontSize: '12px',
-    },
-  },
-  btnSecondary: {
-    padding: '8px 12px',
-    background: '#F3F4F6',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    cursor: 'pointer',
-  },
-  btnDanger: {
-    padding: '8px 12px',
-    background: '#FEE2E2',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    cursor: 'pointer',
-  },
-};
