@@ -1,6 +1,7 @@
 import tempfile
 import os
 import requests
+import cloudinary
 from django.utils import timezone
 from .pdf_extractor import (
     extract_text_from_pdf,
@@ -35,18 +36,41 @@ def analyze_resume(resume_id):
         resume.save()
 
         # ── ÉTAPE 1 : Téléchargement + extraction du texte PDF ──
+
+        # Configurer Cloudinary
+        cloudinary.config(
+            cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+            api_key=os.getenv('CLOUDINARY_API_KEY'),
+            api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+        )
+
+        # Récupérer l'URL et corriger /image/upload/ → /raw/upload/
         file_url = resume.cv_file.url
+        file_url = file_url.replace('/image/upload/', '/raw/upload/')
+        print(f"  🔗 URL corrigée : {file_url}")
+
+        # Télécharger sans authentification (raw est public)
         response = requests.get(file_url)
+        print(f"  📡 Status HTTP : {response.status_code}")
+
+        # Si toujours 401, essayer avec authentification
+        if response.status_code == 401:
+            response = requests.get(
+                file_url,
+                auth=(os.getenv('CLOUDINARY_API_KEY'), os.getenv('CLOUDINARY_API_SECRET'))
+            )
+            print(f"  📡 Status HTTP (avec auth) : {response.status_code}")
 
         if response.status_code != 200:
-            raise ValueError("Impossible de télécharger le CV depuis Cloudinary.")
+            raise ValueError(f"Impossible de télécharger le CV. Status: {response.status_code}")
 
+        # Sauvegarder temporairement pour l'analyse
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
             tmp.write(response.content)
             tmp_path = tmp.name
 
         raw_text = extract_text_from_pdf(tmp_path)
-        os.unlink(tmp_path)  # supprime le fichier temporaire
+        os.unlink(tmp_path)
 
         if not raw_text:
             raise ValueError("Impossible d'extraire le texte du PDF.")
@@ -124,7 +148,7 @@ def analyze_resume(resume_id):
     except Exception as e:
         import traceback
         print(f"  ❌ Erreur analyse CV {resume_id} : {e}")
-        print(traceback.format_exc())  # ← AJOUTER cette ligne
+        print(traceback.format_exc())
         try:
             resume.status = 'error'
             resume.save()

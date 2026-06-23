@@ -27,7 +27,14 @@ class Resume(models.Model):
     )
     cv_file = models.FileField(
         upload_to='cvs/%Y/%m/',
-        verbose_name="Fichier CV"
+        verbose_name="Fichier CV",
+        blank=True,
+        null=True
+    )
+    cv_url = models.URLField(
+        blank=True,
+        null=True,
+        verbose_name="URL Cloudinary du CV"
     )
     raw_text = models.TextField(
         blank=True,
