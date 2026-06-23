@@ -1,193 +1,313 @@
-import { resumesAPI } from '../../api/resumes'
-import toast from 'react-hot-toast'
+import { resumesAPI } from '../../api/resumes';
+import toast from 'react-hot-toast';
+import {
+  Star, CheckCircle2, AlertTriangle, XCircle,
+  Mail, Calendar, Trash2, Clock, ClipboardList,
+} from 'lucide-react';
 
-export default function CandidateCard({ resume, rank, onDelete }) {
-  const analysis = resume.analysis;
-
-  const recommendationConfig = {
-    priority: { label: '⭐ Prioritaire', bg: '#D1FAE5', color: '#065F46' },
-    possible: { label: '✅ Possible', bg: '#DBEAFE', color: '#1E40AF' },
-    reserve: { label: '⚠️ Réserve', bg: '#FEF3C7', color: '#92400E' },
-    rejected: { label: '❌ Rejeté', bg: '#FEE2E2', color: '#991B1B' },
-  };
-
-  const rec = analysis
-    ? recommendationConfig[analysis.recommendation]
-    : null;
-
-  // ← AJOUTER cette fonction
-  const handleDelete = async () => {
-    if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return
-    try {
-      await resumesAPI.delete(resume.id)
-      toast.success('CV supprimé avec succès !')
-      onDelete(resume.id) // ← informe le parent pour mettre à jour la liste
-    } catch {
-      toast.error('Erreur lors de la suppression.')
-    }
+const css = `
+  .cc-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #F1F5F9;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 200px 1fr 160px;
+    gap: 20px;
+    align-items: center;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .cc-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    transform: translateY(-1px);
   }
 
-  const ScoreBar = ({ label, value, color }) => (
-    <div style={styles.scoreBarItem}>
-      <div style={styles.scoreBarHeader}>
-        <span style={styles.scoreBarLabel}>{label}</span>
-        <span style={styles.scoreBarValue}>{value?.toFixed(0)}%</span>
-      </div>
-      <div style={styles.scoreBarBg}>
-        <div style={{
-          ...styles.scoreBarFill,
-          width: `${value || 0}%`,
-          background: color,
-        }} />
-      </div>
-    </div>
-  );
+  /* Left */
+  .cc-left { display: flex; align-items: flex-start; gap: 12px; }
+  .cc-rank {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #EEF2FF;
+    color: #4F46E5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .cc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1E2D45;
+    margin: 0 0 3px;
+  }
+  .cc-email {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #64748B;
+    margin: 0 0 3px;
+  }
+  .cc-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #94A3B8;
+    margin: 0 0 8px;
+  }
+  .cc-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: #FFF5F5;
+    color: #E53E3E;
+    border: 1px solid #FED7D7;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cc-delete-btn:hover { background: #FED7D7; }
 
+  /* Center */
+  .cc-scores { display: flex; flex-direction: column; gap: 7px; }
+  .cc-bar-item {}
+  .cc-bar-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .cc-bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cc-bar-val { font-size: 11px; font-weight: 700; color: #1E2D45; }
+  .cc-bar-bg {
+    height: 5px;
+    background: #F1F5F9;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .cc-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+  }
+  .cc-no-analysis {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #94A3B8;
+    font-style: italic;
+    justify-content: center;
+  }
+
+  /* Right */
+  .cc-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .cc-total-score { display: flex; align-items: baseline; gap: 2px; }
+  .cc-score-num { font-size: 36px; font-weight: 800; color: #1E2D45; }
+  .cc-score-max { font-size: 13px; color: #94A3B8; }
+  .cc-rec-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .cc-missing { width: 100%; }
+  .cc-missing-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 5px;
+  }
+  .cc-missing-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .cc-missing-tag {
+    padding: 2px 8px;
+    background: #FFF5F5;
+    color: #E53E3E;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #FED7D7;
+  }
+  .cc-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #94A3B8;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .cc-card {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+    .cc-left { grid-column: 1 / -1; }
+  }
+  @media (max-width: 600px) {
+    .cc-card {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .cc-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 12px; }
+    .cc-score-num { font-size: 28px; }
+  }
+`;
+
+const REC_CONFIG = {
+  priority: { label: 'Prioritaire', bg: '#D1FAE5', color: '#065F46', icon: <Star     size={12} /> },
+  possible: { label: 'Possible',    bg: '#DBEAFE', color: '#1E40AF', icon: <CheckCircle2  size={12} /> },
+  reserve:  { label: 'Réserve',     bg: '#FEF3C7', color: '#92400E', icon: <AlertTriangle size={12} /> },
+  rejected: { label: 'Rejeté',      bg: '#FEE2E2', color: '#991B1B', icon: <XCircle   size={12} /> },
+};
+
+const SCORE_BARS = [
+  { label: 'Compétences', key: 'score_skills',     color: '#4F46E5' },
+  { label: 'Expérience',  key: 'score_experience', color: '#10B981' },
+  { label: 'Formation',   key: 'score_education',  color: '#F59E0B' },
+  { label: 'Sémantique',  key: 'score_semantic',   color: '#8B5CF6' },
+];
+
+function ScoreBar({ label, value, color }) {
   return (
-    <div style={styles.card}>
-      {/* Gauche : Rang + Nom */}
-      <div style={styles.left}>
-        <div style={styles.rank}>#{rank}</div>
-        <div>
-          <h3 style={styles.name}>{resume.candidate_name}</h3>
-          {resume.candidate_email && (
-            <p style={styles.email}>{resume.candidate_email}</p>
-          )}
-          <p style={styles.uploadDate}>
-            Importé le {new Date(resume.uploaded_at).toLocaleDateString('fr-FR')}
-          </p>
-          {/* ← AJOUTER le bouton ici */}
-          <button onClick={handleDelete} style={styles.deleteBtn}>
-            🗑️ Supprimer
-          </button>
-        </div>
+    <div className="cc-bar-item">
+      <div className="cc-bar-header">
+        <span className="cc-bar-label">{label}</span>
+        <span className="cc-bar-val">{value?.toFixed(0)}%</span>
       </div>
-
-      {/* Centre : Scores détaillés */}
-      {analysis ? (
-        <div style={styles.scores}>
-          <ScoreBar label="Compétences" value={analysis.score_skills} color="#4F46E5" />
-          <ScoreBar label="Expérience" value={analysis.score_experience} color="#10B981" />
-          <ScoreBar label="Formation" value={analysis.score_education} color="#F59E0B" />
-          <ScoreBar label="Sémantique" value={analysis.score_semantic} color="#8B5CF6" />
-        </div>
-      ) : (
-        <div style={styles.noAnalysis}>
-          {resume.status === 'analyzing'
-            ? '⏳ Analyse en cours...'
-            : '📋 En attente d\'analyse'}
-        </div>
-      )}
-
-      {/* Droite : Score total + Recommandation */}
-      <div style={styles.right}>
-        {analysis ? (
-          <>
-            <div style={styles.totalScore}>
-              <span style={styles.scoreNumber}>
-                {analysis.score_total?.toFixed(0)}
-              </span>
-              <span style={styles.scoreMax}>/100</span>
-            </div>
-            {rec && (
-              <span style={{
-                ...styles.recBadge,
-                background: rec.bg,
-                color: rec.color,
-              }}>
-                {rec.label}
-              </span>
-            )}
-            {analysis.missing_skills?.length > 0 && (
-              <div style={styles.missing}>
-                <p style={styles.missingTitle}>Manque :</p>
-                <div style={styles.missingTags}>
-                  {analysis.missing_skills.slice(0, 3).map((s) => (
-                    <span key={s} style={styles.missingTag}>{s}</span>
-                  ))}
-                  {analysis.missing_skills.length > 3 && (
-                    <span style={styles.missingTag}>
-                      +{analysis.missing_skills.length - 3}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={styles.statusBadge}>
-            {resume.status === 'pending' ? '⏳ En attente' : '🔄 Analyse...'}
-          </div>
-        )}
+      <div className="cc-bar-bg">
+        <div className="cc-bar-fill" style={{ width: `${value || 0}%`, background: color }} />
       </div>
     </div>
   );
 }
 
-const styles = {
-  card: {
-    background: '#fff', borderRadius: '12px',
-    padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    display: 'grid',
-    gridTemplateColumns: '200px 1fr 160px',
-    gap: '20px', alignItems: 'center',
-    transition: 'box-shadow 0.2s',
-  },
-  left: { display: 'flex', alignItems: 'center', gap: '12px' },
-  rank: {
-    width: '36px', height: '36px', borderRadius: '50%',
-    background: '#EEF2FF', color: '#4F46E5',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '13px', fontWeight: '700', flexShrink: 0,
-  },
-  name: { fontSize: '14px', fontWeight: '700', color: '#1F2937' },
-  email: { fontSize: '12px', color: '#6B7280', marginTop: '2px' },
-  uploadDate: { fontSize: '11px', color: '#9CA3AF', marginTop: '2px' },
-  // ← AJOUTER ce style
-  deleteBtn: {
-    marginTop: '6px', padding: '4px 10px',
-    background: '#FEE2E2', color: '#991B1B',
-    border: 'none', borderRadius: '6px',
-    fontSize: '11px', fontWeight: '600',
-    cursor: 'pointer',
-  },
-  scores: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  scoreBarItem: {},
-  scoreBarHeader: {
-    display: 'flex', justifyContent: 'space-between',
-    marginBottom: '3px',
-  },
-  scoreBarLabel: { fontSize: '11px', color: '#6B7280' },
-  scoreBarValue: { fontSize: '11px', fontWeight: '600', color: '#374151' },
-  scoreBarBg: {
-    height: '6px', background: '#F3F4F6',
-    borderRadius: '10px', overflow: 'hidden',
-  },
-  scoreBarFill: {
-    height: '100%', borderRadius: '10px',
-    transition: 'width 0.5s ease',
-  },
-  noAnalysis: {
-    textAlign: 'center', fontSize: '13px',
-    color: '#9CA3AF', fontStyle: 'italic',
-  },
-  right: {
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', gap: '8px',
-  },
-  totalScore: { display: 'flex', alignItems: 'baseline', gap: '2px' },
-  scoreNumber: { fontSize: '36px', fontWeight: '800', color: '#1F2937' },
-  scoreMax: { fontSize: '14px', color: '#9CA3AF' },
-  recBadge: {
-    padding: '4px 12px', borderRadius: '20px',
-    fontSize: '12px', fontWeight: '600', textAlign: 'center',
-  },
-  missing: { width: '100%' },
-  missingTitle: { fontSize: '11px', color: '#9CA3AF', marginBottom: '4px' },
-  missingTags: { display: 'flex', flexWrap: 'wrap', gap: '4px' },
-  missingTag: {
-    padding: '2px 8px', background: '#FEE2E2',
-    color: '#991B1B', borderRadius: '10px', fontSize: '11px',
-  },
-  statusBadge: { fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' },
-};
+export default function CandidateCard({ resume, rank, onDelete }) {
+  const analysis = resume.analysis;
+  const rec = analysis ? REC_CONFIG[analysis.recommendation] : null;
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return;
+    try {
+      await resumesAPI.delete(resume.id);
+      toast.success('CV supprimé avec succès !');
+      onDelete(resume.id);
+    } catch {
+      toast.error('Erreur lors de la suppression.');
+    }
+  };
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="cc-card">
+
+        {/* Gauche */}
+        <div className="cc-left">
+          <div className="cc-rank">#{rank}</div>
+          <div>
+            <h3 className="cc-name">{resume.candidate_name}</h3>
+            {resume.candidate_email && (
+              <p className="cc-email">
+                <Mail size={11} color="#94A3B8" /> {resume.candidate_email}
+              </p>
+            )}
+            <p className="cc-date">
+              <Calendar size={11} color="#94A3B8" />
+              {new Date(resume.uploaded_at).toLocaleDateString('fr-FR')}
+            </p>
+            <button className="cc-delete-btn" onClick={handleDelete}>
+              <Trash2 size={11} /> Supprimer
+            </button>
+          </div>
+        </div>
+
+        {/* Centre */}
+        {analysis ? (
+          <div className="cc-scores">
+            {SCORE_BARS.map((bar) => (
+              <ScoreBar
+                key={bar.key}
+                label={bar.label}
+                value={analysis[bar.key]}
+                color={bar.color}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="cc-no-analysis">
+            {resume.status === 'analyzing'
+              ? <><Clock size={14} /> Analyse en cours...</>
+              : <><ClipboardList size={14} /> En attente d'analyse</>
+            }
+          </div>
+        )}
+
+        {/* Droite */}
+        <div className="cc-right">
+          {analysis ? (
+            <>
+              <div className="cc-total-score">
+                <span className="cc-score-num">{analysis.score_total?.toFixed(0)}</span>
+                <span className="cc-score-max">/100</span>
+              </div>
+
+              {rec && (
+                <span className="cc-rec-badge" style={{ background: rec.bg, color: rec.color }}>
+                  {rec.icon} {rec.label}
+                </span>
+              )}
+
+              {analysis.missing_skills?.length > 0 && (
+                <div className="cc-missing">
+                  <p className="cc-missing-title">Manque</p>
+                  <div className="cc-missing-tags">
+                    {analysis.missing_skills.slice(0, 3).map((s) => (
+                      <span key={s} className="cc-missing-tag">{s}</span>
+                    ))}
+                    {analysis.missing_skills.length > 3 && (
+                      <span className="cc-missing-tag">+{analysis.missing_skills.length - 3}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="cc-status-badge">
+              {resume.status === 'pending'
+                ? <><Clock size={13} /> En attente</>
+                : <><Clock size={13} /> Analyse...</>
+              }
+            </div>
+          )}
+        </div>
+
+      </div>
+    </>
+  );
+}

@@ -1,6 +1,53 @@
 import { useState } from 'react';
 import { resumesAPI } from '../../api/resumes';
 import toast from 'react-hot-toast';
+import { Download, FileDown, Loader2 } from 'lucide-react';
+
+const css = `
+  .eb-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .eb-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .eb-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+  .eb-csv {
+    background: #F0FDF4;
+    color: #065F46;
+    border-color: #A7F3D0;
+  }
+  .eb-csv:hover:not(:disabled) { background: #D1FAE5; }
+  .eb-pdf {
+    background: #EFF6FF;
+    color: #1E40AF;
+    border-color: #BFDBFE;
+  }
+  .eb-pdf:hover:not(:disabled) { background: #DBEAFE; }
+
+  .eb-spin {
+    animation: eb-rotate 0.8s linear infinite;
+  }
+  @keyframes eb-rotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 480px) {
+    .eb-btn { flex: 1; justify-content: center; }
+  }
+`;
 
 export default function ExportButtons({ jobId, jobTitle }) {
   const [loadingCSV, setLoadingCSV] = useState(false);
@@ -23,9 +70,7 @@ export default function ExportButtons({ jobId, jobTitle }) {
       toast.success('Export CSV téléchargé !');
     } catch {
       toast.error("Erreur lors de l'export CSV.");
-    } finally {
-      setLoadingCSV(false);
-    }
+    } finally { setLoadingCSV(false); }
   };
 
   const handlePDF = async () => {
@@ -36,38 +81,28 @@ export default function ExportButtons({ jobId, jobTitle }) {
       toast.success('Export PDF téléchargé !');
     } catch {
       toast.error("Erreur lors de l'export PDF.");
-    } finally {
-      setLoadingPDF(false);
-    }
+    } finally { setLoadingPDF(false); }
   };
 
   return (
-    <div style={styles.container}>
-      <button
-        onClick={handleCSV}
-        disabled={loadingCSV}
-        style={{ ...styles.btn, ...styles.csvBtn, opacity: loadingCSV ? 0.7 : 1 }}
-      >
-        {loadingCSV ? '⏳' : '📊'} Export CSV
-      </button>
-      <button
-        onClick={handlePDF}
-        disabled={loadingPDF}
-        style={{ ...styles.btn, ...styles.pdfBtn, opacity: loadingPDF ? 0.7 : 1 }}
-      >
-        {loadingPDF ? '⏳' : '📄'} Export PDF
-      </button>
-    </div>
+    <>
+      <style>{css}</style>
+      <div className="eb-container">
+        <button className="eb-btn eb-csv" onClick={handleCSV} disabled={loadingCSV}>
+          {loadingCSV
+            ? <Loader2 size={14} className="eb-spin" />
+            : <Download size={14} />
+          }
+          Export CSV
+        </button>
+        <button className="eb-btn eb-pdf" onClick={handlePDF} disabled={loadingPDF}>
+          {loadingPDF
+            ? <Loader2 size={14} className="eb-spin" />
+            : <FileDown size={14} />
+          }
+          Export PDF
+        </button>
+      </div>
+    </>
   );
 }
-
-const styles = {
-  container: { display: 'flex', gap: '8px' },
-  btn: {
-    padding: '8px 16px', border: 'none',
-    borderRadius: '8px', fontSize: '13px',
-    fontWeight: '600', cursor: 'pointer',
-  },
-  csvBtn: { background: '#D1FAE5', color: '#065F46' },
-  pdfBtn: { background: '#DBEAFE', color: '#1E40AF' },
-};
