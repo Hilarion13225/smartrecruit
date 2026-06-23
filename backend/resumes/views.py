@@ -2,10 +2,12 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+import cloudinary.uploader
 from .models import Resume
 from jobs.models import Job
 from .serializers import ResumeSerializer, ResumeUploadSerializer
 from analysis.tasks import analyze_resume
+
 
 class ResumeListView(generics.ListAPIView):
     serializer_class = ResumeSerializer
@@ -24,7 +26,7 @@ class ResumeUploadView(APIView):
 
     def post(self, request, job_id):
         job = get_object_or_404(Job, id=job_id, recruiter=request.user)
-        
+
         files = request.FILES.getlist('cv_files')
         if not files:
             return Response(
@@ -34,10 +36,19 @@ class ResumeUploadView(APIView):
 
         uploaded = []
         for file in files:
+            # ← Upload direct sur Cloudinary en raw (pour les PDFs)
+            result = cloudinary.uploader.upload(
+                file,
+                resource_type='raw',
+                folder='cvs/',
+            )
+            cloudinary_url = result.get('secure_url')
+            print(f"  ✅ CV uploadé sur Cloudinary : {cloudinary_url}")
+
             resume = Resume.objects.create(
                 job=job,
                 candidate_name=file.name.replace('.pdf', ''),
-                cv_file=file,
+                cv_url=cloudinary_url,  # ← URL Cloudinary directe
                 status='pending'
             )
             uploaded.append(ResumeUploadSerializer(resume).data)
@@ -65,12 +76,13 @@ class AnalyzeResumesView(APIView):
         for resume in resumes:
             resume.status = 'analyzing'
             resume.save()
-            analyze_resume(resume.id)  # On va créer cette fonction ensuite
+            analyze_resume(resume.id)
 
         return Response({
             "message": f"Analyse lancée pour {resumes.count()} CV.",
         })
-        
+
+
 class ResumeDeleteView(APIView):
     """Supprime un CV uploadé"""
     permission_classes = [permissions.IsAuthenticated]
@@ -81,8 +93,17 @@ class ResumeDeleteView(APIView):
             id=resume_id,
             job__recruiter=request.user
         )
-        resume.cv_file.delete(save=False)  # supprime le fichier physique
-        resume.delete()  # supprime l'entrée en base
+        # Supprimer sur Cloudinary si cv_url existe
+        if resume.cv_url:
+            try:
+                public_id = resume.cv_url.split('/cvs/')[-1].split('.')[0]
+                cloudinary.uploader.destroy(f"cvs/{public_id}", resource_type='raw')
+            except Exception:
+                pass
+        elif resume.cv_file:
+            resume.cv_file.delete(save=False)
+
+        resume.delete()
         return Response(
             {"message": "CV supprimé avec succès."},
             status=status.HTTP_204_NO_CONTENT

@@ -1,7 +1,7 @@
 import tempfile
 import os
 import requests
-import cloudinary
+import base64
 from django.utils import timezone
 from .pdf_extractor import (
     extract_text_from_pdf,
@@ -36,30 +36,23 @@ def analyze_resume(resume_id):
         resume.save()
 
         # ── ÉTAPE 1 : Téléchargement + extraction du texte PDF ──
+        if resume.cv_url:
+            file_url = resume.cv_url
+            print(f"  🔗 URL Cloudinary (raw) : {file_url}")
+        else:
+            file_url = resume.cv_file.url.replace('/image/upload/', '/raw/upload/')
+            print(f"  🔗 URL corrigée (ancien) : {file_url}")
 
-        # Configurer Cloudinary
-        cloudinary.config(
-            cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-            api_key=os.getenv('CLOUDINARY_API_KEY'),
-            api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+        # Télécharger avec authentification Cloudinary
+        credentials = base64.b64encode(
+            f"{os.getenv('CLOUDINARY_API_KEY')}:{os.getenv('CLOUDINARY_API_SECRET')}".encode()
+        ).decode()
+
+        response = requests.get(
+            file_url,
+            headers={'Authorization': f'Basic {credentials}'}
         )
-
-        # Récupérer l'URL et corriger /image/upload/ → /raw/upload/
-        file_url = resume.cv_file.url
-        file_url = file_url.replace('/image/upload/', '/raw/upload/')
-        print(f"  🔗 URL corrigée : {file_url}")
-
-        # Télécharger sans authentification (raw est public)
-        response = requests.get(file_url)
         print(f"  📡 Status HTTP : {response.status_code}")
-
-        # Si toujours 401, essayer avec authentification
-        if response.status_code == 401:
-            response = requests.get(
-                file_url,
-                auth=(os.getenv('CLOUDINARY_API_KEY'), os.getenv('CLOUDINARY_API_SECRET'))
-            )
-            print(f"  📡 Status HTTP (avec auth) : {response.status_code}")
 
         if response.status_code != 200:
             raise ValueError(f"Impossible de télécharger le CV. Status: {response.status_code}")

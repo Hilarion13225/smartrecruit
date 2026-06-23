@@ -380,4 +380,3 @@ const styles = {
     cursor: 'pointer',
   },
 };
-};
