@@ -122,7 +122,9 @@ def analyze_resume(resume_id):
         print(f"  ✅ Analyse terminée — {recommendation.upper()}\n")
 
     except Exception as e:
+        import traceback
         print(f"  ❌ Erreur analyse CV {resume_id} : {e}")
+        print(traceback.format_exc())  # ← AJOUTER cette ligne
         try:
             resume.status = 'error'
             resume.save()
