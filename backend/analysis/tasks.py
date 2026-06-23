@@ -1,3 +1,6 @@
+import tempfile
+import os
+import requests
 from django.utils import timezone
 from .pdf_extractor import (
     extract_text_from_pdf,
@@ -20,11 +23,6 @@ from .scorer import (
 
 
 def analyze_resume(resume_id):
-    """
-    Fonction principale d'analyse d'un CV
-    Appelée depuis resumes/views.py
-    """
-    # Import ici pour éviter les imports circulaires
     from resumes.models import Resume
     from .models import Analysis
 
@@ -36,9 +34,19 @@ def analyze_resume(resume_id):
         resume.status = 'analyzing'
         resume.save()
 
-        # ── ÉTAPE 1 : Extraction du texte PDF ──
-        file_path = resume.cv_file.path
-        raw_text = extract_text_from_pdf(file_path)
+        # ── ÉTAPE 1 : Téléchargement + extraction du texte PDF ──
+        file_url = resume.cv_file.url
+        response = requests.get(file_url)
+
+        if response.status_code != 200:
+            raise ValueError("Impossible de télécharger le CV depuis Cloudinary.")
+
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
+            tmp.write(response.content)
+            tmp_path = tmp.name
+
+        raw_text = extract_text_from_pdf(tmp_path)
+        os.unlink(tmp_path)  # supprime le fichier temporaire
 
         if not raw_text:
             raise ValueError("Impossible d'extraire le texte du PDF.")
