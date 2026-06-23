@@ -228,16 +228,15 @@ const handleExportPDF = async () => {
           ) : (
             <div style={styles.candidateList}>
               {resumes
-                .sort((a, b) =>
-                  (b.analysis?.score_total || 0) - (a.analysis?.score_total || 0)
-                )
-                .map((resume, index) => (
-                  <CandidateCard
-                    key={resume.id}
-                    resume={resume}
-                    rank={index + 1}
-                  />
-                ))}
+              .sort((a, b) => (b.analysis?.score_total || 0) - (a.analysis?.score_total || 0))
+              .map((resume, index) => (
+                <CandidateCard
+                  key={resume.id}
+                  resume={resume}
+                  rank={index + 1}
+                  onDelete={(id) => setResumes(prev => prev.filter(r => r.id !== id))} // ← AJOUTER
+                />
+              ))}
             </div>
           )}
         </div>

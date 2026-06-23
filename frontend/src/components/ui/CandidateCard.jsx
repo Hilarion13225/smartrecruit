@@ -1,4 +1,7 @@
-export default function CandidateCard({ resume, rank }) {
+import { resumesAPI } from '../../api/resumes'
+import toast from 'react-hot-toast'
+
+export default function CandidateCard({ resume, rank, onDelete }) {
   const analysis = resume.analysis;
 
   const recommendationConfig = {
@@ -11,6 +14,18 @@ export default function CandidateCard({ resume, rank }) {
   const rec = analysis
     ? recommendationConfig[analysis.recommendation]
     : null;
+
+  // ← AJOUTER cette fonction
+  const handleDelete = async () => {
+    if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return
+    try {
+      await resumesAPI.delete(resume.id)
+      toast.success('CV supprimé avec succès !')
+      onDelete(resume.id) // ← informe le parent pour mettre à jour la liste
+    } catch {
+      toast.error('Erreur lors de la suppression.')
+    }
+  }
 
   const ScoreBar = ({ label, value, color }) => (
     <div style={styles.scoreBarItem}>
@@ -41,6 +56,10 @@ export default function CandidateCard({ resume, rank }) {
           <p style={styles.uploadDate}>
             Importé le {new Date(resume.uploaded_at).toLocaleDateString('fr-FR')}
           </p>
+          {/* ← AJOUTER le bouton ici */}
+          <button onClick={handleDelete} style={styles.deleteBtn}>
+            🗑️ Supprimer
+          </button>
         </div>
       </div>
 
@@ -79,8 +98,6 @@ export default function CandidateCard({ resume, rank }) {
                 {rec.label}
               </span>
             )}
-
-            {/* Compétences manquantes */}
             {analysis.missing_skills?.length > 0 && (
               <div style={styles.missing}>
                 <p style={styles.missingTitle}>Manque :</p>
@@ -126,6 +143,14 @@ const styles = {
   name: { fontSize: '14px', fontWeight: '700', color: '#1F2937' },
   email: { fontSize: '12px', color: '#6B7280', marginTop: '2px' },
   uploadDate: { fontSize: '11px', color: '#9CA3AF', marginTop: '2px' },
+  // ← AJOUTER ce style
+  deleteBtn: {
+    marginTop: '6px', padding: '4px 10px',
+    background: '#FEE2E2', color: '#991B1B',
+    border: 'none', borderRadius: '6px',
+    fontSize: '11px', fontWeight: '600',
+    cursor: 'pointer',
+  },
   scores: { display: 'flex', flexDirection: 'column', gap: '6px' },
   scoreBarItem: {},
   scoreBarHeader: {
@@ -151,25 +176,18 @@ const styles = {
     alignItems: 'center', gap: '8px',
   },
   totalScore: { display: 'flex', alignItems: 'baseline', gap: '2px' },
-  scoreNumber: {
-    fontSize: '36px', fontWeight: '800', color: '#1F2937',
-  },
+  scoreNumber: { fontSize: '36px', fontWeight: '800', color: '#1F2937' },
   scoreMax: { fontSize: '14px', color: '#9CA3AF' },
   recBadge: {
     padding: '4px 12px', borderRadius: '20px',
-    fontSize: '12px', fontWeight: '600',
-    textAlign: 'center',
+    fontSize: '12px', fontWeight: '600', textAlign: 'center',
   },
   missing: { width: '100%' },
-  missingTitle: {
-    fontSize: '11px', color: '#9CA3AF', marginBottom: '4px',
-  },
+  missingTitle: { fontSize: '11px', color: '#9CA3AF', marginBottom: '4px' },
   missingTags: { display: 'flex', flexWrap: 'wrap', gap: '4px' },
   missingTag: {
     padding: '2px 8px', background: '#FEE2E2',
     color: '#991B1B', borderRadius: '10px', fontSize: '11px',
   },
-  statusBadge: {
-    fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic',
-  },
+  statusBadge: { fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' },
 };
