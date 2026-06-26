@@ -1,20 +1,12 @@
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
 import re
-
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-    return _model
 
 
 def extract_skills_from_text(text, required_skills):
     """
     Détecte quelles compétences requises sont présentes dans le CV
-    Utilise la correspondance exacte + sémantique
+    Utilise la correspondance exacte + TF-IDF (sans torch)
     """
     text_lower = text.lower()
     found_skills = []
@@ -28,25 +20,26 @@ def extract_skills_from_text(text, required_skills):
             found_skills.append(skill)
             continue
 
-        # Vérification par mots-clés proches
+        # Vérification par mots-clés
         skill_words = skill_lower.split()
         if all(word in text_lower for word in skill_words):
             found_skills.append(skill)
             continue
 
-        # Vérification sémantique
-        model = get_model()
-        skill_emb = model.encode([skill_lower])
-        
-        # Découper le texte en phrases pour comparaison
+        # Vérification sémantique légère avec TF-IDF
         sentences = [s.strip() for s in re.split(r'[.\n,;]', text_lower) if len(s.strip()) > 10][:50]
-        
+
         if sentences:
-            text_emb = model.encode(sentences)
-            similarities = cosine_similarity(skill_emb, text_emb)[0]
-            if similarities.max() > 0.75:
-                found_skills.append(skill)
-                continue
+            try:
+                vectorizer = TfidfVectorizer()
+                docs = [skill_lower] + sentences
+                tfidf_matrix = vectorizer.fit_transform(docs)
+                similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:])[0]
+                if similarities.max() > 0.3:
+                    found_skills.append(skill)
+                    continue
+            except Exception:
+                pass
 
         missing_skills.append(skill)
 
@@ -97,20 +90,24 @@ def calculate_score_education(cv_education, required_education):
 
 
 def calculate_score_semantic(cv_text, job_description):
-    """Score sémantique : similarité globale CV / description du poste"""
+    """
+    Score sémantique : similarité CV / description du poste
+    Utilise TF-IDF au lieu de sentence_transformers
+    """
     if not cv_text or not job_description:
         return 50.0
 
-    # Limiter la taille pour la performance
-    cv_short = cv_text[:2000]
-    job_short = job_description[:1000]
+    try:
+        cv_short = cv_text[:2000]
+        job_short = job_description[:1000]
 
-    model = get_model()
-    embeddings = model.encode([cv_short, job_short])
-    similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform([cv_short, job_short])
+        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:])[0][0]
 
-    # Convertir en score 0-100
-    return float(similarity * 100)
+        return float(similarity * 100)
+    except Exception:
+        return 50.0
 
 
 def calculate_total_score(score_skills, score_experience, score_education, score_semantic):
