@@ -196,12 +196,55 @@ const css = `
  
   .loading-screen {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 60vh;
-    color: #6B7280;
-    font-size: 15px;
-    gap: 10px;
+    gap: 16px;
+  }
+
+  .loading-icon-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #EEF2FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .loading-bar-bg {
+    width: 120px;
+    height: 3px;
+    background: #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .loading-bar-fill {
+    height: 100%;
+    width: 40%;
+    background: #4F46E5;
+    border-radius: 10px;
+    animation: slide 1.2s ease-in-out infinite;
+  }
+
+  .loading-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748B;
+    margin: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+  }
+
+  @keyframes slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
   }
  
   @media (max-width: 1024px) {
@@ -251,8 +294,13 @@ export default function Dashboard() {
  
   if (loading) return (
     <div className="loading-screen">
-      <Bot size={20} color="#4F46E5" />
-      Chargement...
+      <div className="loading-icon-box">
+        <Bot size={28} color="#4F46E5" />
+      </div>
+      <div className="loading-bar-bg">
+        <div className="loading-bar-fill" />
+      </div>
+      <p className="loading-text">Chargement...</p>
     </div>
   );
  

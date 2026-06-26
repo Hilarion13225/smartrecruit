@@ -1,189 +1,149 @@
+import { useState, useEffect } from 'react';
 import { resumesAPI } from '../../api/resumes';
 import toast from 'react-hot-toast';
 import {
   Star, CheckCircle2, AlertTriangle, XCircle,
-  Mail, Calendar, Trash2, Clock, ClipboardList,
+  Mail, Calendar, Trash2, Clock, AlertCircle,
 } from 'lucide-react';
 
 const css = `
   .cc-card {
-    background: #fff;
-    border-radius: 14px;
-    border: 1px solid #F1F5F9;
+    background: var(--color-background-primary, #fff);
+    border: 0.5px solid var(--color-border-tertiary, #F1F5F9);
+    border-radius: 12px;
     padding: 20px;
     display: grid;
-    grid-template-columns: 200px 1fr 160px;
+    grid-template-columns: 280px 1fr 170px;
     gap: 20px;
     align-items: center;
-    transition: box-shadow 0.15s, transform 0.15s;
+    transition: box-shadow 0.15s;
   }
-  .cc-card:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-    transform: translateY(-1px);
-  }
-
-  /* Left */
   .cc-left { display: flex; align-items: flex-start; gap: 12px; }
   .cc-rank {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: #EEF2FF;
-    color: #4F46E5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500; flex-shrink: 0;
   }
   .cc-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1E2D45;
-    margin: 0 0 3px;
+    font-size: 14px; font-weight: 500;
+    color: var(--color-text-primary);
+    margin: 0 0 4px;
+    white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; max-width: 220px;
   }
-  .cc-email {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #64748B;
-    margin: 0 0 3px;
+  .cc-meta {
+    font-size: 12px; color: var(--color-text-secondary);
+    margin: 0 0 3px; display: flex; align-items: center; gap: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 220px;
   }
   .cc-date {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: #94A3B8;
-    margin: 0 0 8px;
+    font-size: 11px; color: var(--color-text-tertiary);
+    margin: 0 0 10px; display: flex; align-items: center; gap: 4px;
   }
   .cc-delete-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    background: #FFF5F5;
-    color: #E53E3E;
-    border: 1px solid #FED7D7;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; background: var(--color-background-danger);
+    color: var(--color-text-danger); border: 0.5px solid var(--color-border-danger);
+    border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer;
   }
-  .cc-delete-btn:hover { background: #FED7D7; }
-
-  /* Center */
-  .cc-scores { display: flex; flex-direction: column; gap: 7px; }
-  .cc-bar-item {}
-  .cc-bar-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 3px;
-  }
+  .cc-scores { display: flex; flex-direction: column; gap: 8px; }
+  .cc-bar-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
   .cc-bar-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #94A3B8;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: 11px; font-weight: 500;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase; letter-spacing: .06em;
   }
-  .cc-bar-val { font-size: 11px; font-weight: 700; color: #1E2D45; }
+  .cc-bar-val { font-size: 11px; font-weight: 500; color: var(--color-text-primary); }
   .cc-bar-bg {
-    height: 5px;
-    background: #F1F5F9;
-    border-radius: 10px;
-    overflow: hidden;
+    height: 5px; background: var(--color-background-secondary);
+    border-radius: 10px; overflow: hidden;
   }
-  .cc-bar-fill {
-    height: 100%;
-    border-radius: 10px;
-    transition: width 0.5s ease;
+  .cc-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+  .cc-error-box {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--color-text-secondary); justify-content: center;
   }
-  .cc-no-analysis {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #94A3B8;
-    font-style: italic;
-    justify-content: center;
+  .cc-pending-box {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--color-text-tertiary);
+    font-style: italic; justify-content: center;
   }
-
-  /* Right */
   .cc-right {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
   }
   .cc-total-score { display: flex; align-items: baseline; gap: 2px; }
-  .cc-score-num { font-size: 36px; font-weight: 800; color: #1E2D45; }
-  .cc-score-max { font-size: 13px; color: #94A3B8; }
+  .cc-score-num { font-size: 40px; font-weight: 500; color: var(--color-text-primary); }
+  .cc-score-max { font-size: 13px; color: var(--color-text-tertiary); }
   .cc-rec-badge {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-align: center;
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
   }
-  .cc-missing { width: 100%; }
   .cc-missing-title {
-    font-size: 10px;
-    font-weight: 700;
-    color: #94A3B8;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 0 0 5px;
+    font-size: 10px; font-weight: 500;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase; letter-spacing: .08em; margin: 0 0 5px;
   }
   .cc-missing-tags { display: flex; flex-wrap: wrap; gap: 4px; }
   .cc-missing-tag {
-    padding: 2px 8px;
-    background: #FFF5F5;
-    color: #E53E3E;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    border: 1px solid #FED7D7;
+    padding: 2px 8px; background: var(--color-background-danger);
+    color: var(--color-text-danger); border-radius: 8px;
+    font-size: 11px; border: 0.5px solid var(--color-border-danger);
   }
-  .cc-status-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #94A3B8;
-    font-style: italic;
+  .cc-pending-badge {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
   }
 
+  /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
     .cc-card {
       grid-template-columns: 1fr 1fr;
       grid-template-rows: auto auto;
     }
     .cc-left { grid-column: 1 / -1; }
+    .cc-right { align-items: flex-start; }
+    .cc-name { max-width: 100%; }
+    .cc-meta { max-width: 100%; }
   }
+
   @media (max-width: 600px) {
     .cc-card {
       grid-template-columns: 1fr;
       gap: 16px;
+      padding: 16px;
     }
-    .cc-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 12px; }
+    .cc-right {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .cc-score-num { font-size: 32px; }
+    .cc-name { max-width: 100%; }
+    .cc-meta { max-width: 100%; }
+    .cc-error-box { justify-content: flex-start; }
+    .cc-pending-box { justify-content: flex-start; }
+  }
+
+  @media (max-width: 400px) {
+    .cc-card { padding: 14px; gap: 12px; }
     .cc-score-num { font-size: 28px; }
+    .cc-bar-label { font-size: 10px; }
+    .cc-delete-btn { width: 100%; justify-content: center; }
   }
 `;
 
 const REC_CONFIG = {
-  priority: { label: 'Prioritaire', bg: '#D1FAE5', color: '#065F46', icon: <Star     size={12} /> },
-  possible: { label: 'Possible',    bg: '#DBEAFE', color: '#1E40AF', icon: <CheckCircle2  size={12} /> },
-  reserve:  { label: 'Réserve',     bg: '#FEF3C7', color: '#92400E', icon: <AlertTriangle size={12} /> },
-  rejected: { label: 'Rejeté',      bg: '#FEE2E2', color: '#991B1B', icon: <XCircle   size={12} /> },
+  priority: { label: 'Prioritaire', bg: '#D1FAE5', color: '#065F46', icon: <Star size={11} /> },
+  possible: { label: 'Possible',    bg: '#DBEAFE', color: '#1E40AF', icon: <CheckCircle2 size={11} /> },
+  reserve:  { label: 'Réserve',     bg: '#FEF3C7', color: '#92400E', icon: <AlertTriangle size={11} /> },
+  rejected: { label: 'Rejeté',      bg: '#FEE2E2', color: '#991B1B', icon: <XCircle size={11} /> },
 };
 
 const SCORE_BARS = [
@@ -195,7 +155,7 @@ const SCORE_BARS = [
 
 function ScoreBar({ label, value, color }) {
   return (
-    <div className="cc-bar-item">
+    <div>
       <div className="cc-bar-header">
         <span className="cc-bar-label">{label}</span>
         <span className="cc-bar-val">{value?.toFixed(0)}%</span>
@@ -210,12 +170,13 @@ function ScoreBar({ label, value, color }) {
 export default function CandidateCard({ resume, rank, onDelete }) {
   const analysis = resume.analysis;
   const rec = analysis ? REC_CONFIG[analysis.recommendation] : null;
+  const isError = resume.status === 'error';
 
   const handleDelete = async () => {
     if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return;
     try {
       await resumesAPI.delete(resume.id);
-      toast.success('CV supprimé avec succès !');
+      toast.success('CV supprimé !');
       onDelete(resume.id);
     } catch {
       toast.error('Erreur lors de la suppression.');
@@ -227,18 +188,26 @@ export default function CandidateCard({ resume, rank, onDelete }) {
       <style>{css}</style>
       <div className="cc-card">
 
-        {/* Gauche */}
+        {/* ── Gauche ── */}
         <div className="cc-left">
-          <div className="cc-rank">#{rank}</div>
-          <div>
-            <h3 className="cc-name">{resume.candidate_name}</h3>
+          <div className="cc-rank" style={{
+            background: rank === 1 ? 'var(--color-background-info)' : 'var(--color-background-secondary)',
+            color: rank === 1 ? 'var(--color-text-info)' : 'var(--color-text-secondary)',
+          }}>
+            #{rank}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p className="cc-name" title={resume.candidate_name}>
+              {resume.candidate_name}
+            </p>
             {resume.candidate_email && (
-              <p className="cc-email">
-                <Mail size={11} color="#94A3B8" /> {resume.candidate_email}
+              <p className="cc-meta">
+                <Mail size={11} style={{ flexShrink: 0 }} />
+                {resume.candidate_email}
               </p>
             )}
             <p className="cc-date">
-              <Calendar size={11} color="#94A3B8" />
+              <Calendar size={11} style={{ flexShrink: 0 }} />
               {new Date(resume.uploaded_at).toLocaleDateString('fr-FR')}
             </p>
             <button className="cc-delete-btn" onClick={handleDelete}>
@@ -247,28 +216,26 @@ export default function CandidateCard({ resume, rank, onDelete }) {
           </div>
         </div>
 
-        {/* Centre */}
-        {analysis ? (
+        {/* ── Centre ── */}
+        {isError ? (
+          <div className="cc-error-box">
+            <AlertCircle size={16} color="#F59E0B" />
+            PDF scanné — texte non extractible
+          </div>
+        ) : analysis ? (
           <div className="cc-scores">
             {SCORE_BARS.map((bar) => (
-              <ScoreBar
-                key={bar.key}
-                label={bar.label}
-                value={analysis[bar.key]}
-                color={bar.color}
-              />
+              <ScoreBar key={bar.key} label={bar.label} value={analysis[bar.key]} color={bar.color} />
             ))}
           </div>
         ) : (
-          <div className="cc-no-analysis">
-            {resume.status === 'analyzing'
-              ? <><Clock size={14} /> Analyse en cours...</>
-              : <><ClipboardList size={14} /> En attente d'analyse</>
-            }
+          <div className="cc-pending-box">
+            <Clock size={14} />
+            {resume.status === 'analyzing' ? 'Analyse en cours...' : "En attente d'analyse"}
           </div>
         )}
 
-        {/* Droite */}
+        {/* ── Droite ── */}
         <div className="cc-right">
           {analysis ? (
             <>
@@ -276,19 +243,17 @@ export default function CandidateCard({ resume, rank, onDelete }) {
                 <span className="cc-score-num">{analysis.score_total?.toFixed(0)}</span>
                 <span className="cc-score-max">/100</span>
               </div>
-
               {rec && (
                 <span className="cc-rec-badge" style={{ background: rec.bg, color: rec.color }}>
                   {rec.icon} {rec.label}
                 </span>
               )}
-
               {analysis.missing_skills?.length > 0 && (
-                <div className="cc-missing">
+                <div style={{ width: '100%' }}>
                   <p className="cc-missing-title">Manque</p>
                   <div className="cc-missing-tags">
-                    {analysis.missing_skills.slice(0, 3).map((s) => (
-                      <span key={s} className="cc-missing-tag">{s}</span>
+                    {analysis.missing_skills.slice(0, 3).map((skill) => (
+                      <span key={skill} className="cc-missing-tag">{skill}</span>
                     ))}
                     {analysis.missing_skills.length > 3 && (
                       <span className="cc-missing-tag">+{analysis.missing_skills.length - 3}</span>
@@ -297,27 +262,17 @@ export default function CandidateCard({ resume, rank, onDelete }) {
                 </div>
               )}
             </>
+          ) : isError ? (
+            <span className="cc-pending-badge">
+              <AlertTriangle size={11} /> Non analysé
+            </span>
           ) : (
-            <div className="cc-status-badge">
-              {resume.status === 'pending'
-                ? <><Clock size={13} /> En attente</>
-                : <><Clock size={13} /> Analyse...</>
-              }
-            </div>
+            <span className="cc-pending-badge">
+              <Clock size={11} />
+              {resume.status === 'analyzing' ? 'Analyse...' : 'En attente'}
+            </span>
           )}
         </div>
-        {resume.status === 'error' && (
-          <div style={{
-            padding: '8px 14px',
-            background: '#FEF3C7',
-            borderRadius: '8px',
-            fontSize: '12px',
-            color: '#92400E',
-            textAlign: 'center',
-          }}>
-            ⚠️ PDF scanné — texte non extractible
-          </div>
-        )}
       </div>
     </>
   );

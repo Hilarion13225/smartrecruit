@@ -14,14 +14,13 @@ import {
 
 const css = `
   .jd-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 400px;
-    color: #94A3B8;
-    font-size: 14px;
-    gap: 10px;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+}
 
   /* Header */
   .jd-header {
@@ -266,19 +265,58 @@ const css = `
 
   .jd-candidate-list { display: flex; flex-direction: column; gap: 12px; }
 
+  /* ── RESPONSIVE MOBILE ── */
   @media (max-width: 768px) {
-    .jd-header { flex-direction: column; align-items: stretch; }
-    .jd-header-actions { flex-wrap: wrap; }
-    .jd-export-csv, .jd-export-pdf { flex: 1; justify-content: center; }
-    .jd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .jd-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .jd-back-btn { align-self: flex-start; }
     .jd-title { font-size: 18px; }
+    .jd-header-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .jd-analyze-btn {
+      grid-column: 1 / -1;
+      justify-content: center;
+    }
+    .jd-export-csv, .jd-export-pdf { justify-content: center; }
+    .jd-stats-row {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .jd-stat-card { padding: 12px 16px; }
     .jd-stat-value { font-size: 22px; }
-  }
-  @media (max-width: 480px) {
-    .jd-stats-row { grid-template-columns: repeat(2, 1fr); }
+    .jd-tabs {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .jd-tab { padding: 8px 14px; font-size: 12px; }
     .jd-card { padding: 16px; }
-    .jd-empty { padding: 40px 20px; }
-    .jd-analyze-btn { width: 100%; justify-content: center; }
+    .jd-empty { padding: 40px 16px; }
+    .jd-empty-title { font-size: 16px; }
+    .jd-candidate-list { gap: 10px; }
+  }
+
+  @media (max-width: 480px) {
+    .jd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .jd-stat-value { font-size: 20px; }
+    .jd-stat-label { font-size: 10px; }
+    .jd-meta-row { gap: 10px; }
+    .jd-meta-chip { font-size: 11px; }
+    .jd-tabs { border-radius: 10px; }
+    .jd-tab { padding: 8px 12px; font-size: 12px; gap: 5px; }
+    .jd-card { padding: 14px; }
+    .jd-skill-tag { font-size: 11px; padding: 4px 10px; }
+    .jd-description { font-size: 13px; }
+    .jd-empty { padding: 32px 14px; }
+    .jd-empty-icon { width: 52px; height: 52px; }
+    .jd-import-btn { width: 100%; justify-content: center; }
   }
 `;
 
@@ -370,10 +408,31 @@ export default function JobDetail() {
   };
 
   if (loading) return (
-    <div className="jd-loading">
-      <Bot size={18} color="#CBD5E1" /> Chargement...
+  <div className="jd-loading">
+    <div style={{
+      width: '48px', height: '48px', borderRadius: '14px',
+      background: '#EEF2FF', display: 'flex',
+      alignItems: 'center', justifyContent: 'center',
+      animation: 'pulse 1.5s ease-in-out infinite',
+    }}>
+      <Bot size={24} color="#4F46E5" />
     </div>
-  );
+    <div style={{
+      width: '100px', height: '3px', background: '#E2E8F0',
+      borderRadius: '10px', overflow: 'hidden',
+    }}>
+      <div style={{
+        height: '100%', width: '40%', background: '#4F46E5',
+        borderRadius: '10px', animation: 'slide 1.2s ease-in-out infinite',
+      }} />
+    </div>
+    <span style={{ fontSize: '14px', color: '#94A3B8' }}>Chargement...</span>
+    <style>{`
+      @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85} }
+      @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+    `}</style>
+  </div>
+);
   if (!job) return null;
 
   const analyzed = resumes.filter((r) => r.status === 'analyzed');
