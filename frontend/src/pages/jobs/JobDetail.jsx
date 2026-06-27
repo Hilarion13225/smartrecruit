@@ -13,22 +13,30 @@ import {
 } from 'lucide-react';
 
 const css = `
-  .jd-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  gap: 16px;
-}
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.08); opacity: .85; }
+  }
+  @keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
 
-  /* Header */
+  .jd-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 16px;
+  }
+
+  /* ── Header ── */
   .jd-header {
     display: flex;
     align-items: flex-start;
     gap: 16px;
     margin-bottom: 24px;
-    flex-wrap: wrap;
   }
   .jd-back-btn {
     display: flex;
@@ -47,6 +55,7 @@ const css = `
     flex-shrink: 0;
   }
   .jd-back-btn:hover { background: #F8FAFC; color: #1E2D45; }
+
   .jd-header-info { flex: 1; min-width: 0; }
   .jd-title-label {
     font-size: 11px;
@@ -61,7 +70,9 @@ const css = `
     font-weight: 700;
     color: #1E2D45;
     margin: 0 0 8px;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
   }
   .jd-meta-row {
     display: flex;
@@ -75,11 +86,13 @@ const css = `
     font-size: 12px;
     color: #64748B;
   }
+
   .jd-header-actions {
     display: flex;
     gap: 8px;
     align-items: flex-start;
     flex-wrap: wrap;
+    flex-shrink: 0;
   }
   .jd-analyze-btn {
     display: flex;
@@ -131,7 +144,7 @@ const css = `
   }
   .jd-export-pdf:hover { background: #FFF5F5; border-color: #FED7D7; }
 
-  /* Stats */
+  /* ── Stats ── */
   .jd-stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -157,7 +170,7 @@ const css = `
     letter-spacing: 0.06em;
   }
 
-  /* Tabs */
+  /* ── Tabs ── */
   .jd-tabs {
     display: flex;
     gap: 4px;
@@ -168,7 +181,9 @@ const css = `
     width: fit-content;
     max-width: 100%;
     overflow-x: auto;
+    scrollbar-width: none;
   }
+  .jd-tabs::-webkit-scrollbar { display: none; }
   .jd-tab {
     display: flex;
     align-items: center;
@@ -192,7 +207,7 @@ const css = `
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
 
-  /* Card */
+  /* ── Card ── */
   .jd-card {
     background: #fff;
     border-radius: 14px;
@@ -227,7 +242,7 @@ const css = `
   }
   .jd-description { font-size: 14px; color: #64748B; line-height: 1.7; margin: 0; }
 
-  /* Empty */
+  /* ── Empty ── */
   .jd-empty {
     background: #fff;
     border-radius: 14px;
@@ -262,62 +277,104 @@ const css = `
     transition: background 0.15s;
   }
   .jd-import-btn:hover { background: #2D4263; }
-
   .jd-candidate-list { display: flex; flex-direction: column; gap: 12px; }
 
-  /* ── RESPONSIVE MOBILE ── */
+  /* ════════════════════════════
+     RESPONSIVE
+  ════════════════════════════ */
+
+  /* Mobile */
   @media (max-width: 768px) {
-    .jd-header {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-    .jd-back-btn { align-self: flex-start; }
-    .jd-title { font-size: 18px; }
-    .jd-header-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .jd-analyze-btn {
-      grid-column: 1 / -1;
-      justify-content: center;
-    }
-    .jd-export-csv, .jd-export-pdf { justify-content: center; }
-    .jd-stats-row {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .jd-stat-card { padding: 12px 16px; }
-    .jd-stat-value { font-size: 22px; }
-    .jd-tabs {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .jd-tab { padding: 8px 14px; font-size: 12px; }
-    .jd-card { padding: 16px; }
-    .jd-empty { padding: 40px 16px; }
-    .jd-empty-title { font-size: 16px; }
-    .jd-candidate-list { gap: 10px; }
+
+  /* Header */
+  .jd-header { flex-direction: column; gap: 12px; }
+  .jd-back-btn { align-self: flex-start; }
+  .jd-title { font-size: 17px; overflow-wrap: break-word; word-break: normal; hyphens: none; }
+  .jd-meta-row { gap: 8px; }
+  .jd-meta-chip { font-size: 11px; }
+
+  /* Export en grille 2 col côte à côte */
+  .jd-header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .jd-analyze-btn { grid-column: 1 / -1; justify-content: center; }
+  .jd-export-csv, .jd-export-pdf { justify-content: center; font-size: 12px; padding: 9px 8px; }
+
+  /* Stats : forcer 2x2 sans débordement */
+  .jd-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .jd-stat-card { padding: 10px 8px; }
+  .jd-stat-value { font-size: 20px; }
+  .jd-stat-label { font-size: 9px; letter-spacing: 0.03em; }
+
+  /* Tabs */
+  .jd-tabs { width: 100%; box-sizing: border-box; }
+  .jd-tab { padding: 8px 10px; font-size: 11px; gap: 4px; }
+
+  .jd-card { padding: 14px; }
+  .jd-empty { padding: 36px 16px; }
+  .jd-candidate-list { gap: 10px; }
+
+  /* CandidateCard en colonne */
+  .cc-card {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 14px !important;
   }
 
-  @media (max-width: 480px) {
-    .jd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .jd-stat-value { font-size: 20px; }
-    .jd-stat-label { font-size: 10px; }
-    .jd-meta-row { gap: 10px; }
-    .jd-meta-chip { font-size: 11px; }
-    .jd-tabs { border-radius: 10px; }
-    .jd-tab { padding: 8px 12px; font-size: 12px; gap: 5px; }
-    .jd-card { padding: 14px; }
-    .jd-skill-tag { font-size: 11px; padding: 4px 10px; }
-    .jd-description { font-size: 13px; }
-    .jd-empty { padding: 32px 14px; }
-    .jd-empty-icon { width: 52px; height: 52px; }
-    .jd-import-btn { width: 100%; justify-content: center; }
+  /* Nom tronqué avec ellipsis */
+  .cc-name {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 220px !important;
+    display: block !important;
   }
+  .cc-email {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 220px !important;
+  }
+
+  /* Score + badge en ligne */
+  .cc-right {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: wrap;
+    gap: 10px !important;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 12px;
+  }
+  .cc-total-score { flex-shrink: 0; }
+  .cc-score-num { font-size: 24px !important; }
+  .cc-missing { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .jd-title { font-size: 15px; }
+  .jd-header-actions { grid-template-columns: 1fr; }
+  .jd-export-csv, .jd-export-pdf { grid-column: unset; }
+  .jd-stats-row { gap: 6px; }
+  .jd-stat-value { font-size: 18px; }
+  .jd-stat-label { font-size: 9px; }
+  .jd-tab { padding: 7px 8px; font-size: 10px; }
+  .jd-card { padding: 12px; }
+  .jd-import-btn { width: 100%; justify-content: center; }
+  .cc-card { padding: 12px !important; }
+  .cc-name { max-width: 180px !important; }
+  .cc-email { max-width: 180px !important; }
+  .cc-bar-label { font-size: 10px !important; }
+  .cc-rec-badge { font-size: 10px !important; padding: 3px 8px !important; }
+  .cc-delete-btn { font-size: 10px !important; padding: 4px 8px !important; }
+  .cc-score-num { font-size: 20px !important; }
+}
 `;
 
 export default function JobDetail() {
@@ -408,47 +465,42 @@ export default function JobDetail() {
   };
 
   if (loading) return (
-  <div className="jd-loading">
-    <div style={{
-      width: '48px', height: '48px', borderRadius: '14px',
-      background: '#EEF2FF', display: 'flex',
-      alignItems: 'center', justifyContent: 'center',
-      animation: 'pulse 1.5s ease-in-out infinite',
-    }}>
-      <Bot size={24} color="#4F46E5" />
-    </div>
-    <div style={{
-      width: '100px', height: '3px', background: '#E2E8F0',
-      borderRadius: '10px', overflow: 'hidden',
-    }}>
+    <div className="jd-loading">
+      <style>{css}</style>
       <div style={{
-        height: '100%', width: '40%', background: '#4F46E5',
-        borderRadius: '10px', animation: 'slide 1.2s ease-in-out infinite',
-      }} />
+        width: 48, height: 48, borderRadius: 14,
+        background: '#EEF2FF', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        animation: 'pulse 1.5s ease-in-out infinite',
+      }}>
+        <Bot size={24} color="#4F46E5" />
+      </div>
+      <div style={{ width: 100, height: 3, background: '#E2E8F0', borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: '40%', background: '#4F46E5',
+          borderRadius: 10, animation: 'slide 1.2s ease-in-out infinite',
+        }} />
+      </div>
+      <span style={{ fontSize: 14, color: '#94A3B8' }}>Chargement...</span>
     </div>
-    <span style={{ fontSize: '14px', color: '#94A3B8' }}>Chargement...</span>
-    <style>{`
-      @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85} }
-      @keyframes slide { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
-    `}</style>
-  </div>
-);
+  );
+
   if (!job) return null;
 
   const analyzed = resumes.filter((r) => r.status === 'analyzed');
   const pending  = resumes.filter((r) => r.status === 'pending');
 
   const TABS = [
-    { key: 'candidates', icon: <Users size={14} />,   label: 'Candidats' },
-    { key: 'upload',     icon: <Upload size={14} />,  label: 'Importer des CV' },
-    { key: 'skills',     icon: <Wrench size={14} />,  label: 'Compétences' },
+    { key: 'candidates', icon: <Users  size={14} />, label: 'Candidats' },
+    { key: 'upload',     icon: <Upload size={14} />, label: 'Importer des CV' },
+    { key: 'skills',     icon: <Wrench size={14} />, label: 'Compétences' },
   ];
 
   const STATS = [
-    { label: 'Total CV',    value: resumes.length,                                                     color: '#4F46E5' },
-    { label: 'Analysés',    value: analyzed.length,                                                    color: '#10B981' },
-    { label: 'En attente',  value: pending.length,                                                     color: '#F59E0B' },
-    { label: 'Prioritaires',value: analyzed.filter((r) => r.analysis?.recommendation === 'priority').length, color: '#8B5CF6' },
+    { label: 'Total CV',     value: resumes.length,  color: '#4F46E5' },
+    { label: 'Analysés',     value: analyzed.length, color: '#10B981' },
+    { label: 'En attente',   value: pending.length,  color: '#F59E0B' },
+    { label: 'Prioritaires', value: analyzed.filter((r) => r.analysis?.recommendation === 'priority').length, color: '#8B5CF6' },
   ];
 
   return (
@@ -465,15 +517,9 @@ export default function JobDetail() {
           <p className="jd-title-label">Offre d'emploi</p>
           <h1 className="jd-title">{job.title}</h1>
           <div className="jd-meta-row">
-            <span className="jd-meta-chip">
-              <GraduationCap size={13} color="#94A3B8" /> {job.required_education}
-            </span>
-            <span className="jd-meta-chip">
-              <Clock size={13} color="#94A3B8" /> {job.required_experience} an(s)
-            </span>
-            <span className="jd-meta-chip">
-              <FileText size={13} color="#94A3B8" /> {resumes.length} CV
-            </span>
+            <span className="jd-meta-chip"><GraduationCap size={13} color="#94A3B8" /> {job.required_education}</span>
+            <span className="jd-meta-chip"><Clock size={13} color="#94A3B8" /> {job.required_experience} an(s)</span>
+            <span className="jd-meta-chip"><FileText size={13} color="#94A3B8" /> {resumes.length} CV</span>
           </div>
         </div>
 
@@ -516,10 +562,8 @@ export default function JobDetail() {
         ))}
       </div>
 
-      {/* Upload */}
       {activeTab === 'upload' && <UploadZone onUpload={handleUpload} />}
 
-      {/* Compétences */}
       {activeTab === 'skills' && (
         <div className="jd-card">
           <p className="jd-card-label"><Wrench size={12} /> Compétences requises</p>
@@ -533,13 +577,10 @@ export default function JobDetail() {
         </div>
       )}
 
-      {/* Candidats */}
       {activeTab === 'candidates' && (
         resumes.length === 0 ? (
           <div className="jd-empty">
-            <div className="jd-empty-icon">
-              <Briefcase size={28} color="#4F46E5" />
-            </div>
+            <div className="jd-empty-icon"><Briefcase size={28} color="#4F46E5" /></div>
             <h3 className="jd-empty-title">Aucun CV importé</h3>
             <p className="jd-empty-text">Importez des CV pour commencer l'analyse IA.</p>
             <button className="jd-import-btn" onClick={() => setActiveTab('upload')}>
@@ -555,14 +596,14 @@ export default function JobDetail() {
                   key={resume.id}
                   resume={resume}
                   rank={index + 1}
-                  onDelete={(id) => setResumes((prev) => prev.filter((r) => r.id !== id))}
+                  onDelete={(rid) => setResumes((prev) => prev.filter((r) => r.id !== rid))}
                 />
               ))}
           </div>
         )
       )}
 
-      {analyzed.length > 0 && <ExportButtons jobId={id} jobTitle={job.title} />}
+      {/* {analyzed.length > 0 && <ExportButtons jobId={id} jobTitle={job.title} />} */}
     </>
   );
 }

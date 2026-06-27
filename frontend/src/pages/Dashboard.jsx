@@ -237,6 +237,43 @@ const css = `
     margin: 0;
   }
 
+  /* ── Skeleton ── */
+  .sk {
+    background: #E2E8F0;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sk::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, #F8FAFC 50%, transparent 100%);
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes sk-shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .sk-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .sk-chart-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #F1F5F9;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  @media (max-width: 1024px) { .sk-charts-row { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 768px)  { .sk-charts-row { grid-template-columns: 1fr; } }
+  @media (max-width: 640px)  { .sk-chart-card { padding: 16px; } }
+
   @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.08); opacity: 0.85; }
@@ -293,15 +330,69 @@ export default function Dashboard() {
   }, []);
  
   if (loading) return (
-    <div className="loading-screen">
-      <div className="loading-icon-box">
-        <Bot size={28} color="#4F46E5" />
+    <>
+      <style>{css}</style>
+
+      {/* Header skeleton */}
+      <div className="dash-header">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="sk" style={{ width: 200, height: 13 }} />
+          <div className="sk" style={{ width: 260, height: 30 }} />
+          <div className="sk" style={{ width: 140, height: 12 }} />
+        </div>
+        <div className="sk" style={{ width: 140, height: 40, borderRadius: 10 }} />
       </div>
-      <div className="loading-bar-bg">
-        <div className="loading-bar-fill" />
+
+      {/* Stat cards skeleton */}
+      <div className="stats-grid">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="stat-card">
+            <div className="sk" style={{ width: 52, height: 52, borderRadius: 12 }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="sk" style={{ height: 28, width: '50%' }} />
+              <div className="sk" style={{ height: 11, width: '75%' }} />
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="loading-text">Chargement...</p>
-    </div>
+
+      {/* Charts skeleton */}
+      <div className="sk-charts-row">
+
+        {/* Score moyen */}
+        <div className="sk-chart-card">
+          <div className="sk" style={{ height: 13, width: '70%' }} />
+          <div className="sk" style={{ height: 180, borderRadius: 10 }} />
+        </div>
+
+        {/* Répartition */}
+        <div className="sk-chart-card">
+          <div className="sk" style={{ height: 13, width: '65%' }} />
+          <div className="sk" style={{ height: 180, borderRadius: 10 }} />
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {[70, 55, 45, 60].map((w, i) => (
+              <div key={i} className="sk" style={{ height: 10, width: w }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Offres récentes */}
+        <div className="sk-chart-card">
+          <div className="sk" style={{ height: 13, width: '55%' }} />
+          {[...Array(3)].map((_, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#F9FAFB', borderRadius: 10, gap: 8 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="sk" style={{ height: 12, width: '80%' }} />
+                <div className="sk" style={{ height: 10, width: '50%' }} />
+              </div>
+              <div className="sk" style={{ height: 22, width: 60, borderRadius: 20 }} />
+            </div>
+          ))}
+          <div className="sk" style={{ height: 12, width: 140, marginTop: 4 }} />
+        </div>
+
+      </div>
+    </>
   );
  
   const pieData   = stats ? PIE_DATA(stats)   : [];

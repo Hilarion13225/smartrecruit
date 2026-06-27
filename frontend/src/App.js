@@ -15,8 +15,8 @@ import AdminAnalyses from './pages/admin/AdminAnalyses';
 import Settings from './pages/Settings';
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div style={loadingStyle}>Chargement...</div>;
+  const { user } = useAuth();
+  // if (loading) return <div style={loadingStyle}>Chargement...</div>;
   return user ? children : <Navigate to="/login" />;
 }
 
