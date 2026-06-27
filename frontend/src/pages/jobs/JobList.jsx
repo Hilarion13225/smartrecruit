@@ -277,6 +277,44 @@ const css = `
   .empty-title { font-size: 18px; font-weight: 700; color: #1E2D45; margin: 0 0 8px; }
   .empty-text { font-size: 14px; color: #94A3B8; max-width: 360px; margin: 0 auto 24px; }
 
+  /* ── Skeleton ── */
+  .sk {
+    background: #E2E8F0;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sk::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, #F8FAFC 50%, transparent 100%);
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes sk-shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .sk-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .sk-job-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #F1F5F9;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  @media (max-width: 640px) {
+    .sk-jobs-grid { grid-template-columns: 1fr; gap: 12px; }
+    .sk-job-card  { padding: 16px; }
+  }
+
   /* ── RESPONSIVE MOBILE ── */
   @media (max-width: 768px) {
     .jobs-header {
@@ -391,9 +429,51 @@ export default function JobList() {
 
       {/* States */}
       {loading ? (
-        <div className="loading-state">
-          <Briefcase size={18} color="#CBD5E1" /> Chargement...
-        </div>
+        <>
+          {/* Header skeleton */}
+          <div className="jobs-header">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="sk" style={{ width: 100, height: 11 }} />
+              <div className="sk" style={{ width: 220, height: 28 }} />
+              <div className="sk" style={{ width: 100, height: 11 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div className="sk" style={{ width: 150, height: 40, borderRadius: 10 }} />
+              <div className="sk" style={{ width: 130, height: 40, borderRadius: 10 }} />
+            </div>
+          </div>
+
+          {/* Search skeleton */}
+          <div className="sk" style={{ height: 44, borderRadius: 10, marginBottom: 24 }} />
+
+          {/* Cards skeleton */}
+          <div className="sk-jobs-grid">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="sk-job-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="sk" style={{ height: 20, width: 70, borderRadius: 20 }} />
+                  <div className="sk" style={{ height: 11, width: 60 }} />
+                </div>
+                <div className="sk" style={{ height: 18, width: '75%' }} />
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div className="sk" style={{ height: 11, width: 80 }} />
+                  <div className="sk" style={{ height: 11, width: 60 }} />
+                  <div className="sk" style={{ height: 11, width: 40 }} />
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[55, 45, 65, 40].map((w, j) => (
+                    <div key={j} className="sk" style={{ height: 22, width: w, borderRadius: 20 }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div className="sk" style={{ flex: 1, height: 36, borderRadius: 8 }} />
+                  <div className="sk" style={{ width: 36, height: 36, borderRadius: 8 }} />
+                  <div className="sk" style={{ width: 36, height: 36, borderRadius: 8 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : filteredJobs.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">

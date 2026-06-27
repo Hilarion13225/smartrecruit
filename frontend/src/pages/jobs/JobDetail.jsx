@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { jobsAPI } from '../../api/jobs';
 import { resumesAPI } from '../../api/resumes';
 import toast from 'react-hot-toast';
 import UploadZone from '../../components/ui/UploadZone';
 import CandidateCard from '../../components/ui/CandidateCard';
-import ExportButtons from '../../components/ui/ExportButtons';
 import {
   ArrowLeft, GraduationCap, Clock, FileText,
   Users, Upload, Wrench, Bot, Download,
@@ -17,9 +16,21 @@ const css = `
     0%,100% { transform: scale(1); opacity: 1; }
     50%      { transform: scale(1.08); opacity: .85; }
   }
-  @keyframes slide {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(350%); }
+  @keyframes jd-breathe {
+    0%,100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  @keyframes jd-ping {
+    0%   { transform: scale(0.9); opacity: 0.7; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  @keyframes jd-typing {
+    0%,80%,100% { transform: translateY(0);   opacity: 0.3; }
+    40%          { transform: translateY(-8px); opacity: 1; }
+  }
+  @keyframes jd-fade {
+    0%,100% { opacity: 0.5; }
+    50%      { opacity: 1; }
   }
 
   .jd-loading {
@@ -27,11 +38,10 @@ const css = `
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 400px;
-    gap: 16px;
+    min-height: 60vh;
+    gap: 20px;
   }
 
-  /* ── Header ── */
   .jd-header {
     display: flex;
     align-items: flex-start;
@@ -55,7 +65,6 @@ const css = `
     flex-shrink: 0;
   }
   .jd-back-btn:hover { background: #F8FAFC; color: #1E2D45; }
-
   .jd-header-info { flex: 1; min-width: 0; }
   .jd-title-label {
     font-size: 11px;
@@ -74,11 +83,7 @@ const css = `
     word-break: normal;
     hyphens: none;
   }
-  .jd-meta-row {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
+  .jd-meta-row { display: flex; gap: 16px; flex-wrap: wrap; }
   .jd-meta-chip {
     display: flex;
     align-items: center;
@@ -86,7 +91,6 @@ const css = `
     font-size: 12px;
     color: #64748B;
   }
-
   .jd-header-actions {
     display: flex;
     gap: 8px;
@@ -144,7 +148,6 @@ const css = `
   }
   .jd-export-pdf:hover { background: #FFF5F5; border-color: #FED7D7; }
 
-  /* ── Stats ── */
   .jd-stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -170,7 +173,6 @@ const css = `
     letter-spacing: 0.06em;
   }
 
-  /* ── Tabs ── */
   .jd-tabs {
     display: flex;
     gap: 4px;
@@ -207,7 +209,6 @@ const css = `
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
 
-  /* ── Card ── */
   .jd-card {
     background: #fff;
     border-radius: 14px;
@@ -225,12 +226,7 @@ const css = `
     gap: 6px;
     margin: 0 0 8px;
   }
-  .jd-card-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1E2D45;
-    margin: 0 0 16px;
-  }
+  .jd-card-title { font-size: 16px; font-weight: 700; color: #1E2D45; margin: 0 0 16px; }
   .jd-skill-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
   .jd-skill-tag {
     padding: 5px 14px;
@@ -242,7 +238,6 @@ const css = `
   }
   .jd-description { font-size: 14px; color: #64748B; line-height: 1.7; margin: 0; }
 
-  /* ── Empty ── */
   .jd-empty {
     background: #fff;
     border-radius: 14px;
@@ -251,131 +246,142 @@ const css = `
     text-align: center;
   }
   .jd-empty-icon {
-    width: 64px;
-    height: 64px;
+    width: 64px; height: 64px;
     background: #EEF2FF;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     margin: 0 auto 16px;
   }
   .jd-empty-title { font-size: 18px; font-weight: 700; color: #1E2D45; margin: 0 0 8px; }
   .jd-empty-text { font-size: 14px; color: #94A3B8; max-width: 360px; margin: 0 auto 24px; }
   .jd-import-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 11px 22px;
-    background: #1E2D45;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 22px; background: #1E2D45; color: #fff;
+    border: none; border-radius: 10px; font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: background 0.15s;
   }
   .jd-import-btn:hover { background: #2D4263; }
   .jd-candidate-list { display: flex; flex-direction: column; gap: 12px; }
 
-  /* ════════════════════════════
-     RESPONSIVE
-  ════════════════════════════ */
-
-  /* Mobile */
-  @media (max-width: 768px) {
-
-  /* Header */
-  .jd-header { flex-direction: column; gap: 12px; }
-  .jd-back-btn { align-self: flex-start; }
-  .jd-title { font-size: 17px; overflow-wrap: break-word; word-break: normal; hyphens: none; }
-  .jd-meta-row { gap: 8px; }
-  .jd-meta-chip { font-size: 11px; }
-
-  /* Export en grille 2 col côte à côte */
-  .jd-header-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .jd-progress-wrap {
+    background: #fff;
+    border: 1px solid #F1F5F9;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
     width: 100%;
   }
-  .jd-analyze-btn { grid-column: 1 / -1; justify-content: center; }
-  .jd-export-csv, .jd-export-pdf { justify-content: center; font-size: 12px; padding: 9px 8px; }
-
-  /* Stats : forcer 2x2 sans débordement */
-  .jd-stats-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px;
-    margin-bottom: 16px;
+  .jd-progress-track {
+    height: 4px;
+    background: #F1F5F9;
+    border-radius: 10px;
+    overflow: hidden;
   }
-  .jd-stat-card { padding: 10px 8px; }
-  .jd-stat-value { font-size: 20px; }
-  .jd-stat-label { font-size: 9px; letter-spacing: 0.03em; }
-
-  /* Tabs */
-  .jd-tabs { width: 100%; box-sizing: border-box; }
-  .jd-tab { padding: 8px 10px; font-size: 11px; gap: 4px; }
-
-  .jd-card { padding: 14px; }
-  .jd-empty { padding: 36px 16px; }
-  .jd-candidate-list { gap: 10px; }
-
-  /* CandidateCard en colonne */
-  .cc-card {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-    padding: 14px !important;
+  .jd-progress-fill {
+    height: 100%;
+    background: #10B981;
+    border-radius: 10px;
+    transition: width 0.15s ease;
   }
-
-  /* Nom tronqué avec ellipsis */
-  .cc-name {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    max-width: 220px !important;
-    display: block !important;
+  .jd-progress-steps { display: flex; gap: 6px; }
+  .jd-progress-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
   }
-  .cc-email {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    max-width: 220px !important;
+  .jd-step-bar {
+    width: 100%;
+    height: 4px;
+    border-radius: 10px;
+    transition: background 0.3s;
+  }
+  .jd-step-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color 0.3s;
+  }
+  .jd-progress-status {
+    font-size: 12px;
+    color: #64748B;
+    margin: 0;
+    text-align: center;
   }
 
-  /* Score + badge en ligne */
-  .cc-right {
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: wrap;
-    gap: 10px !important;
-    border-top: 1px solid #F1F5F9;
-    padding-top: 12px;
+  @media (max-width: 900px) {
+    .jd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   }
-  .cc-total-score { flex-shrink: 0; }
-  .cc-score-num { font-size: 24px !important; }
-  .cc-missing { width: 100%; }
-}
-
-@media (max-width: 480px) {
-  .jd-title { font-size: 15px; }
-  .jd-header-actions { grid-template-columns: 1fr; }
-  .jd-export-csv, .jd-export-pdf { grid-column: unset; }
-  .jd-stats-row { gap: 6px; }
-  .jd-stat-value { font-size: 18px; }
-  .jd-stat-label { font-size: 9px; }
-  .jd-tab { padding: 7px 8px; font-size: 10px; }
-  .jd-card { padding: 12px; }
-  .jd-import-btn { width: 100%; justify-content: center; }
-  .cc-card { padding: 12px !important; }
-  .cc-name { max-width: 180px !important; }
-  .cc-email { max-width: 180px !important; }
-  .cc-bar-label { font-size: 10px !important; }
-  .cc-rec-badge { font-size: 10px !important; padding: 3px 8px !important; }
-  .cc-delete-btn { font-size: 10px !important; padding: 4px 8px !important; }
-  .cc-score-num { font-size: 20px !important; }
-}
+  @media (max-width: 768px) {
+    .jd-header { flex-direction: column; gap: 12px; }
+    .jd-back-btn { align-self: flex-start; }
+    .jd-title { font-size: 17px; }
+    .jd-meta-row { gap: 8px; }
+    .jd-meta-chip { font-size: 11px; }
+    .jd-header-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .jd-analyze-btn { grid-column: 1 / -1; justify-content: center; }
+    .jd-export-csv, .jd-export-pdf { justify-content: center; font-size: 12px; padding: 9px 8px; }
+    .jd-stats-row { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; margin-bottom: 16px; }
+    .jd-stat-card { padding: 10px 8px; }
+    .jd-stat-value { font-size: 20px; }
+    .jd-stat-label { font-size: 9px; }
+    .jd-tabs { width: 100%; box-sizing: border-box; }
+    .jd-tab { padding: 8px 10px; font-size: 11px; gap: 4px; }
+    .jd-card { padding: 14px; }
+    .jd-empty { padding: 36px 16px; }
+    .jd-candidate-list { gap: 10px; }
+    .cc-card { grid-template-columns: 1fr !important; gap: 12px !important; padding: 14px !important; }
+    .cc-name { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; max-width: 220px !important; display: block !important; }
+    .cc-email { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; max-width: 220px !important; }
+    .cc-right { flex-direction: row !important; align-items: center !important; flex-wrap: wrap; gap: 10px !important; border-top: 1px solid #F1F5F9; padding-top: 12px; }
+    .cc-total-score { flex-shrink: 0; }
+    .cc-score-num { font-size: 24px !important; }
+    .cc-missing { width: 100%; }
+  }
+  @media (max-width: 480px) {
+    .jd-title { font-size: 15px; }
+    .jd-header-actions { grid-template-columns: 1fr; }
+    .jd-export-csv, .jd-export-pdf { grid-column: unset; }
+    .jd-stats-row { gap: 6px; }
+    .jd-stat-value { font-size: 18px; }
+    .jd-stat-label { font-size: 9px; }
+    .jd-tab { padding: 7px 8px; font-size: 10px; }
+    .jd-card { padding: 12px; }
+    .jd-import-btn { width: 100%; justify-content: center; }
+    .cc-card { padding: 12px !important; }
+    .cc-name { max-width: 180px !important; }
+    .cc-email { max-width: 180px !important; }
+    .cc-bar-label { font-size: 10px !important; }
+    .cc-rec-badge { font-size: 10px !important; padding: 3px 8px !important; }
+    .cc-delete-btn { font-size: 10px !important; padding: 4px 8px !important; }
+    .cc-score-num { font-size: 20px !important; }
+  }
 `;
+
+const ANALYZE_STEPS = [
+  { label: 'Envoi',   threshold: 10  },
+  { label: 'Lecture', threshold: 30  },
+  { label: 'Analyse', threshold: 60  },
+  { label: 'Scores',  threshold: 80  },
+  { label: 'Tri',     threshold: 100 },
+];
+
+const ANALYZE_STATUS = [
+  { pct: 0,   text: "Envoi des CV à l'IA…"     },
+  { pct: 30,  text: 'Lecture des compétences…'  },
+  { pct: 60,  text: 'Calcul des scores…'        },
+  { pct: 80,  text: 'Classement des candidats…' },
+  { pct: 100, text: 'Analyse terminée !'         },
+];
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -384,7 +390,9 @@ export default function JobDetail() {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('candidates');
+  const progressRef = useRef(0); // ← ref pour lire la progression courante
 
   const fetchData = useCallback(async () => {
     try {
@@ -404,6 +412,31 @@ export default function JobDetail() {
   }, [id, navigate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const texts = [
+      'Chargement des candidats…',
+      'Récupération des CV…',
+      'Calcul des scores…',
+      'Tri par pertinence…',
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      i = (i + 1) % texts.length;
+      const el = document.getElementById('jd-load-text');
+      if (el) el.textContent = texts[i];
+    }, 1800);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!analyzing) return;
+    const el = document.getElementById('jd-analyze-status');
+    if (!el) return;
+    const match = ANALYZE_STATUS.filter(s => analyzeProgress >= s.pct).pop();
+    if (match) el.textContent = match.text;
+  }, [analyzing, analyzeProgress]);
 
   const handleExportCSV = async () => {
     try {
@@ -445,44 +478,101 @@ export default function JobDetail() {
     } catch { toast.error("Erreur lors de l'upload."); }
   };
 
+  // Anime progressivement de la valeur actuelle vers target
+  const animateTo = async (target, stepMs = 60) => {
+    const start = progressRef.current;
+    const steps = 12;
+    for (let s = 1; s <= steps; s++) {
+      const pct = Math.round(start + ((target - start) * s) / steps);
+      progressRef.current = pct;
+      setAnalyzeProgress(pct);
+      await new Promise((res) => setTimeout(res, stepMs));
+    }
+  };
+
   const handleAnalyze = async () => {
     setAnalyzing(true);
+    setAnalyzeProgress(0);
+    progressRef.current = 0;
+
     try {
       await resumesAPI.analyze(id);
       toast.success('Analyse lancée !');
+
       const maxAttempts = 10;
       for (let i = 0; i < maxAttempts; i++) {
+        // Anime vers max 90% pendant le poll
+        const targetPct = Math.round(((i + 1) / maxAttempts) * 90);
+        await animateTo(targetPct, 80);
+
         const data = await fetchData();
         const pendingCount = (data?.resumes || []).filter((r) => r.status === 'pending').length;
         if (pendingCount === 0) break;
-        await new Promise((res) => setTimeout(res, 1000));
       }
+
+      // Finit toujours à 100% proprement
+      await animateTo(100, 50);
+
+      // Pause à 100% pour que l'utilisateur voit le résultat
+      await new Promise((res) => setTimeout(res, 800));
+
       setAnalyzing(false);
+      setAnalyzeProgress(0);
+      progressRef.current = 0;
+
     } catch (err) {
       toast.error(err.response?.data?.error || "Erreur d'analyse.");
       setAnalyzing(false);
+      setAnalyzeProgress(0);
+      progressRef.current = 0;
     }
   };
 
   if (loading) return (
-    <div className="jd-loading">
+    <>
       <style>{css}</style>
-      <div style={{
-        width: 48, height: 48, borderRadius: 14,
-        background: '#EEF2FF', display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-        animation: 'pulse 1.5s ease-in-out infinite',
-      }}>
-        <Bot size={24} color="#4F46E5" />
-      </div>
-      <div style={{ width: 100, height: 3, background: '#E2E8F0', borderRadius: 10, overflow: 'hidden' }}>
+      <div className="jd-loading">
         <div style={{
-          height: '100%', width: '40%', background: '#4F46E5',
-          borderRadius: 10, animation: 'slide 1.2s ease-in-out infinite',
-        }} />
+          width: 64, height: 64, borderRadius: 18,
+          background: '#EEF2FF',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
+          animation: 'jd-breathe 2s ease-in-out infinite',
+        }}>
+          <Bot size={30} color="#4F46E5" />
+          <div style={{
+            position: 'absolute', inset: -6,
+            borderRadius: 24,
+            border: '2px solid #4F46E5',
+            opacity: 0,
+            animation: 'jd-ping 1.8s ease-out infinite',
+          }} />
+        </div>
+
+        <div style={{ textAlign: 'center' }}>
+          <p id="jd-load-text" style={{
+            fontSize: 15, fontWeight: 600, color: '#1E2D45',
+            margin: '0 0 6px',
+            animation: 'jd-fade 1.8s ease-in-out infinite',
+          }}>
+            Chargement des candidats…
+          </p>
+          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0 }}>
+            Analyse IA en cours
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: '#4F46E5',
+              animation: `jd-typing 1.2s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
+        </div>
       </div>
-      <span style={{ fontSize: 14, color: '#94A3B8' }}>Chargement...</span>
-    </div>
+    </>
   );
 
   if (!job) return null;
@@ -507,7 +597,6 @@ export default function JobDetail() {
     <>
       <style>{css}</style>
 
-      {/* Header */}
       <div className="jd-header">
         <button className="jd-back-btn" onClick={() => navigate('/jobs')}>
           <ArrowLeft size={14} /> Retour
@@ -525,10 +614,41 @@ export default function JobDetail() {
 
         <div className="jd-header-actions">
           {pending.length > 0 && (
-            <button className="jd-analyze-btn" onClick={handleAnalyze} disabled={analyzing}>
-              <Bot size={15} />
-              {analyzing ? 'Analyse...' : `Analyser ${pending.length} CV`}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, gridColumn: analyzing ? '1 / -1' : 'unset' }}>
+              <button className="jd-analyze-btn" onClick={handleAnalyze} disabled={analyzing}>
+                <Bot size={15} />
+                {analyzing ? `Analyse… ${analyzeProgress}%` : `Analyser ${pending.length} CV`}
+              </button>
+
+              {analyzing && (
+                <div className="jd-progress-wrap">
+                  <div className="jd-progress-track">
+                    <div className="jd-progress-fill" style={{ width: `${analyzeProgress}%` }} />
+                  </div>
+                  <div className="jd-progress-steps">
+                    {ANALYZE_STEPS.map((step, i) => {
+                      const done   = analyzeProgress >= step.threshold;
+                      const active = analyzeProgress >= (i === 0 ? 0 : ANALYZE_STEPS[i - 1].threshold) && !done;
+                      return (
+                        <div key={step.label} className="jd-progress-step">
+                          <div className="jd-step-bar" style={{
+                            background: done ? '#10B981' : active ? '#4F46E5' : '#E2E8F0',
+                          }} />
+                          <span className="jd-step-label" style={{
+                            color: done ? '#10B981' : active ? '#4F46E5' : '#94A3B8',
+                          }}>
+                            {step.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="jd-progress-status" id="jd-analyze-status">
+                    Envoi des CV à l'IA…
+                  </p>
+                </div>
+              )}
+            </div>
           )}
           <button className="jd-export-csv" onClick={handleExportCSV}>
             <Download size={14} /> Export CSV
@@ -539,7 +659,6 @@ export default function JobDetail() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="jd-stats-row">
         {STATS.map((s) => (
           <div key={s.label} className="jd-stat-card">
@@ -549,7 +668,6 @@ export default function JobDetail() {
         ))}
       </div>
 
-      {/* Tabs */}
       <div className="jd-tabs">
         {TABS.map((t) => (
           <button
@@ -602,8 +720,6 @@ export default function JobDetail() {
           </div>
         )
       )}
-
-      {/* {analyzed.length > 0 && <ExportButtons jobId={id} jobTitle={job.title} />} */}
     </>
   );
 }
