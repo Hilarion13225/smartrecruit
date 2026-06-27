@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { resumesAPI } from '../../api/resumes';
 import toast from 'react-hot-toast';
 import {
   Star, CheckCircle2, AlertTriangle, XCircle,
   Mail, Calendar, Trash2, Clock, AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 const css = `
@@ -17,6 +18,10 @@ const css = `
     gap: 20px;
     align-items: center;
     transition: box-shadow 0.15s;
+  }
+  .cc-card.cc-error-card {
+    border-color: #FED7AA;
+    background: #FFFBF5;
   }
   .cc-left { display: flex; align-items: flex-start; gap: 12px; }
   .cc-rank {
@@ -41,12 +46,26 @@ const css = `
     font-size: 11px; color: var(--color-text-tertiary);
     margin: 0 0 10px; display: flex; align-items: center; gap: 4px;
   }
+  .cc-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .cc-delete-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 5px 10px; background: var(--color-background-danger);
     color: var(--color-text-danger); border: 0.5px solid var(--color-border-danger);
     border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer;
+    transition: opacity 0.15s;
   }
+  .cc-retry-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; background: #FFF7ED;
+    color: #C2410C; border: 0.5px solid #FED7AA;
+    border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cc-retry-btn:hover { background: #FFEDD5; }
+  .cc-retry-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cc-retry-btn .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
   .cc-scores { display: flex; flex-direction: column; gap: 8px; }
   .cc-bar-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
   .cc-bar-label {
@@ -60,10 +79,20 @@ const css = `
     border-radius: 10px; overflow: hidden;
   }
   .cc-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+
   .cc-error-box {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: var(--color-text-secondary); justify-content: center;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; justify-content: center;
   }
+  .cc-error-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; color: #C2410C;
+  }
+  .cc-error-desc {
+    font-size: 11px; color: var(--color-text-tertiary);
+    text-align: center; line-height: 1.5;
+  }
+
   .cc-pending-box {
     display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: var(--color-text-tertiary);
@@ -99,43 +128,36 @@ const css = `
     background: var(--color-background-secondary);
     color: var(--color-text-secondary);
   }
+  .cc-error-badge {
+    display: flex; align-items: center; gap: 5px;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+    background: #FFF7ED; color: #C2410C;
+    border: 0.5px solid #FED7AA;
+  }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
-    .cc-card {
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
-    }
+    .cc-card { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
     .cc-left { grid-column: 1 / -1; }
     .cc-right { align-items: flex-start; }
     .cc-name { max-width: 100%; }
     .cc-meta { max-width: 100%; }
   }
-
   @media (max-width: 600px) {
-    .cc-card {
-      grid-template-columns: 1fr;
-      gap: 16px;
-      padding: 16px;
-    }
-    .cc-right {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
-    }
+    .cc-card { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
+    .cc-right { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
     .cc-score-num { font-size: 32px; }
     .cc-name { max-width: 100%; }
     .cc-meta { max-width: 100%; }
-    .cc-error-box { justify-content: flex-start; }
+    .cc-error-box { align-items: flex-start; }
     .cc-pending-box { justify-content: flex-start; }
   }
-
   @media (max-width: 400px) {
     .cc-card { padding: 14px; gap: 12px; }
     .cc-score-num { font-size: 28px; }
     .cc-bar-label { font-size: 10px; }
-    .cc-delete-btn { width: 100%; justify-content: center; }
+    .cc-delete-btn, .cc-retry-btn { flex: 1; justify-content: center; }
   }
 `;
 
@@ -153,6 +175,18 @@ const SCORE_BARS = [
   { label: 'Sémantique',  key: 'score_semantic',   color: '#8B5CF6' },
 ];
 
+// Messages d'erreur selon le type
+const ERROR_MESSAGES = {
+  scanned: { title: 'PDF scanné', desc: 'Le texte ne peut pas être extrait automatiquement.' },
+  download: { title: 'Téléchargement échoué', desc: 'Impossible d\'accéder au fichier. Réessayez.' },
+  default:  { title: 'Analyse échouée', desc: 'Une erreur est survenue lors de l\'analyse.' },
+};
+
+function getErrorType(resume) {
+  if (resume.raw_text === '') return 'scanned';
+  return 'default';
+}
+
 function ScoreBar({ label, value, color }) {
   return (
     <div>
@@ -167,10 +201,11 @@ function ScoreBar({ label, value, color }) {
   );
 }
 
-export default function CandidateCard({ resume, rank, onDelete }) {
+export default function CandidateCard({ resume, rank, onDelete, onRetry }) {
   const analysis = resume.analysis;
   const rec = analysis ? REC_CONFIG[analysis.recommendation] : null;
   const isError = resume.status === 'error';
+  const [retrying, setRetrying] = useState(false);
 
   const handleDelete = async () => {
     if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return;
@@ -183,10 +218,26 @@ export default function CandidateCard({ resume, rank, onDelete }) {
     }
   };
 
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await resumesAPI.retry(resume.id)  // ← endpoint à créer
+      toast.success('Analyse relancée !');
+      onRetry(resume.id);  // ← rafraîchit la liste
+    } catch {
+      toast.error('Impossible de relancer l\'analyse.');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const errorType = isError ? getErrorType(resume) : null;
+  const errorMsg = errorType ? ERROR_MESSAGES[errorType] : null;
+
   return (
     <>
       <style>{css}</style>
-      <div className="cc-card">
+      <div className={`cc-card${isError ? ' cc-error-card' : ''}`}>
 
         {/* ── Gauche ── */}
         <div className="cc-left">
@@ -210,17 +261,33 @@ export default function CandidateCard({ resume, rank, onDelete }) {
               <Calendar size={11} style={{ flexShrink: 0 }} />
               {new Date(resume.uploaded_at).toLocaleDateString('fr-FR')}
             </p>
-            <button className="cc-delete-btn" onClick={handleDelete}>
-              <Trash2 size={11} /> Supprimer
-            </button>
+            <div className="cc-btn-row">
+              <button className="cc-delete-btn" onClick={handleDelete}>
+                <Trash2 size={11} /> Supprimer
+              </button>
+              {isError && errorType !== 'scanned' && (
+                <button className="cc-retry-btn" onClick={handleRetry} disabled={retrying}>
+                  <RefreshCw size={11} className={retrying ? 'spin' : ''} />
+                  {retrying ? 'En cours...' : 'Réessayer'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* ── Centre ── */}
         {isError ? (
           <div className="cc-error-box">
-            <AlertCircle size={16} color="#F59E0B" />
-            PDF scanné — texte non extractible
+            <p className="cc-error-title">
+              <AlertCircle size={15} color="#C2410C" />
+              {errorMsg?.title}
+            </p>
+            <p className="cc-error-desc">{errorMsg?.desc}</p>
+            {errorType === 'scanned' && (
+              <p className="cc-error-desc" style={{ color: '#F59E0B', fontStyle: 'italic' }}>
+                💡 Convertissez ce PDF en texte avant de le réuploader.
+              </p>
+            )}
           </div>
         ) : analysis ? (
           <div className="cc-scores">
@@ -263,8 +330,8 @@ export default function CandidateCard({ resume, rank, onDelete }) {
               )}
             </>
           ) : isError ? (
-            <span className="cc-pending-badge">
-              <AlertTriangle size={11} /> Non analysé
+            <span className="cc-error-badge">
+              <AlertTriangle size={11} /> Erreur
             </span>
           ) : (
             <span className="cc-pending-badge">

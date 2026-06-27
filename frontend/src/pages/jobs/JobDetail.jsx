@@ -478,6 +478,16 @@ export default function JobDetail() {
     } catch { toast.error("Erreur lors de l'upload."); }
   };
 
+  const handleRetry = async (resumeId) => {
+    // Remet le CV en pending localement pour l'affichage
+    setResumes((prev) =>
+      prev.map((r) => r.id === resumeId ? { ...r, status: 'pending' } : r)
+    );
+    // Recharge les données après un délai pour laisser le temps à l'analyse
+    setTimeout(async () => {
+      await fetchData();
+    }, 3000);
+  };
   // Anime progressivement de la valeur actuelle vers target
   const animateTo = async (target, stepMs = 60) => {
     const start = progressRef.current;
@@ -715,6 +725,7 @@ export default function JobDetail() {
                   resume={resume}
                   rank={index + 1}
                   onDelete={(rid) => setResumes((prev) => prev.filter((r) => r.id !== rid))}
+                  onRetry={handleRetry}  // ← AJOUTER
                 />
               ))}
           </div>

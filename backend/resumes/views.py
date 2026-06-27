@@ -108,3 +108,19 @@ class ResumeDeleteView(APIView):
             {"message": "CV supprimé avec succès."},
             status=status.HTTP_204_NO_CONTENT
         )
+        
+class ResumeRetryView(APIView):
+    """Relance l'analyse d'un CV en erreur"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, resume_id):
+        resume = get_object_or_404(
+            Resume,
+            id=resume_id,
+            job__recruiter=request.user,
+            status='error'  # ← seulement les CVs en erreur
+        )
+        resume.status = 'pending'
+        resume.save()
+        analyze_resume(resume.id)
+        return Response({'message': 'Analyse relancée.'})
