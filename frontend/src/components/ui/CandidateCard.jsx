@@ -14,14 +14,45 @@ const css = `
     border-radius: 12px;
     padding: 20px;
     display: grid;
-    grid-template-columns: 280px 1fr 170px;
+    grid-template-columns: 32px 280px 1fr 170px;
     gap: 20px;
     align-items: center;
-    transition: box-shadow 0.15s;
+    transition: box-shadow 0.15s, border-color 0.15s;
+    cursor: pointer;
+  }
+  .cc-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .cc-card.cc-selected {
+    border-color: #4F46E5;
+    background: #F5F3FF;
   }
   .cc-card.cc-error-card {
     border-color: #FED7AA;
     background: #FFFBF5;
+  }
+  .cc-card.cc-error-card.cc-selected {
+    border-color: #4F46E5;
+    background: #F5F3FF;
+  }
+  .cc-checkbox {
+    width: 18px; height: 18px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+  }
+  .cc-checkbox.checked {
+    background: #4F46E5;
+    border-color: #4F46E5;
+  }
+  .cc-checkbox.checked::after {
+    content: '';
+    width: 5px; height: 9px;
+    border: 2px solid #fff;
+    border-top: none; border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+    display: block;
   }
   .cc-left { display: flex; align-items: flex-start; gap: 12px; }
   .cc-rank {
@@ -79,7 +110,6 @@ const css = `
     border-radius: 10px; overflow: hidden;
   }
   .cc-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
-
   .cc-error-box {
     display: flex; flex-direction: column; align-items: center;
     gap: 6px; justify-content: center;
@@ -92,7 +122,6 @@ const css = `
     font-size: 11px; color: var(--color-text-tertiary);
     text-align: center; line-height: 1.5;
   }
-
   .cc-pending-box {
     display: flex; align-items: center; gap: 8px;
     font-size: 13px; color: var(--color-text-tertiary);
@@ -136,17 +165,18 @@ const css = `
     border: 0.5px solid #FED7AA;
   }
 
-  /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
-    .cc-card { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
-    .cc-left { grid-column: 1 / -1; }
+    .cc-card { grid-template-columns: 32px 1fr 1fr; grid-template-rows: auto auto; }
+    .cc-left { grid-column: 2 / -1; }
     .cc-right { align-items: flex-start; }
     .cc-name { max-width: 100%; }
     .cc-meta { max-width: 100%; }
   }
   @media (max-width: 600px) {
-    .cc-card { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
-    .cc-right { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .cc-card { grid-template-columns: 32px 1fr; gap: 16px; padding: 16px; }
+    .cc-left { grid-column: 2 / 3; }
+    .cc-scores { grid-column: 1 / -1; }
+    .cc-right { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
     .cc-score-num { font-size: 32px; }
     .cc-name { max-width: 100%; }
     .cc-meta { max-width: 100%; }
@@ -175,11 +205,10 @@ const SCORE_BARS = [
   { label: 'Sémantique',  key: 'score_semantic',   color: '#8B5CF6' },
 ];
 
-// Messages d'erreur selon le type
 const ERROR_MESSAGES = {
-  scanned: { title: 'PDF scanné', desc: 'Le texte ne peut pas être extrait automatiquement.' },
-  download: { title: 'Téléchargement échoué', desc: 'Impossible d\'accéder au fichier. Réessayez.' },
-  default:  { title: 'Analyse échouée', desc: 'Une erreur est survenue lors de l\'analyse.' },
+  scanned:  { title: 'PDF scanné', desc: 'Le texte ne peut pas être extrait automatiquement.' },
+  download: { title: 'Téléchargement échoué', desc: "Impossible d'accéder au fichier. Réessayez." },
+  default:  { title: 'Analyse échouée', desc: "Une erreur est survenue lors de l'analyse." },
 };
 
 function getErrorType(resume) {
@@ -201,13 +230,14 @@ function ScoreBar({ label, value, color }) {
   );
 }
 
-export default function CandidateCard({ resume, rank, onDelete, onRetry }) {
+export default function CandidateCard({ resume, rank, onDelete, onRetry, selected, onSelect }) {
   const analysis = resume.analysis;
   const rec = analysis ? REC_CONFIG[analysis.recommendation] : null;
   const isError = resume.status === 'error';
   const [retrying, setRetrying] = useState(false);
 
-  const handleDelete = async () => {
+  const handleDelete = async (e) => {
+    e.stopPropagation();
     if (!window.confirm(`Supprimer le CV de ${resume.candidate_name} ?`)) return;
     try {
       await resumesAPI.delete(resume.id);
@@ -218,14 +248,15 @@ export default function CandidateCard({ resume, rank, onDelete, onRetry }) {
     }
   };
 
-  const handleRetry = async () => {
+  const handleRetry = async (e) => {
+    e.stopPropagation();
     setRetrying(true);
     try {
-      await resumesAPI.retry(resume.id)  // ← endpoint à créer
+      await resumesAPI.retry(resume.id);
       toast.success('Analyse relancée !');
-      onRetry(resume.id);  // ← rafraîchit la liste
+      onRetry(resume.id);
     } catch {
-      toast.error('Impossible de relancer l\'analyse.');
+      toast.error("Impossible de relancer l'analyse.");
     } finally {
       setRetrying(false);
     }
@@ -237,7 +268,15 @@ export default function CandidateCard({ resume, rank, onDelete, onRetry }) {
   return (
     <>
       <style>{css}</style>
-      <div className={`cc-card${isError ? ' cc-error-card' : ''}`}>
+      <div
+        className={`cc-card${isError ? ' cc-error-card' : ''}${selected ? ' cc-selected' : ''}`}
+        onClick={() => onSelect(resume.id)}
+      >
+        {/* ── Checkbox ── */}
+        <div
+          className={`cc-checkbox${selected ? ' checked' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onSelect(resume.id); }}
+        />
 
         {/* ── Gauche ── */}
         <div className="cc-left">

@@ -10,6 +10,7 @@ import {
   Users, Upload, Wrench, Bot, Download,
   FileDown, Briefcase,
 } from 'lucide-react';
+import { CheckSquare, Square, Trash2 as Trash2Icon } from 'lucide-react';
 
 const css = `
   @keyframes pulse {
@@ -313,6 +314,46 @@ const css = `
     text-align: center;
   }
 
+  .jd-selection-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: #EEF2FF;
+    border: 1px solid #C7D2FE;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .jd-selection-count {
+    font-size: 13px; font-weight: 600; color: #4F46E5; flex: 1;
+  }
+  .jd-select-all-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; background: #fff;
+    border: 1px solid #C7D2FE; border-radius: 8px;
+    font-size: 12px; font-weight: 500; color: #4F46E5;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .jd-select-all-btn:hover { background: #F5F3FF; }
+  .jd-delete-selected-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; background: #EF4444;
+    border: none; border-radius: 8px;
+    font-size: 12px; font-weight: 600; color: #fff;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .jd-delete-selected-btn:hover { background: #DC2626; }
+  .jd-deselect-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px; background: transparent;
+    border: 1px solid #C7D2FE; border-radius: 8px;
+    font-size: 12px; font-weight: 500; color: #64748B;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .jd-deselect-btn:hover { background: #fff; }
+
   @media (max-width: 900px) {
     .jd-stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   }
@@ -488,6 +529,34 @@ export default function JobDetail() {
       await fetchData();
     }, 3000);
   };
+
+  const handleSelect = (resumeId) => {
+    setSelectedIds((prev) =>
+      prev.includes(resumeId)
+        ? prev.filter((id) => id !== resumeId)
+        : [...prev, resumeId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === resumes.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(resumes.map((r) => r.id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!window.confirm(`Supprimer ${selectedIds.length} CV sélectionné(s) ?`)) return;
+    try {
+      await Promise.all(selectedIds.map((rid) => resumesAPI.delete(rid)));
+      setResumes((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} CV supprimé(s) !`);
+    } catch {
+      toast.error('Erreur lors de la suppression.');
+    }
+  };
   // Anime progressivement de la valeur actuelle vers target
   const animateTo = async (target, stepMs = 60) => {
     const start = progressRef.current;
@@ -537,6 +606,7 @@ export default function JobDetail() {
       progressRef.current = 0;
     }
   };
+  const [selectedIds, setSelectedIds] = useState([]);
 
   if (loading) return (
     <>
@@ -602,6 +672,8 @@ export default function JobDetail() {
     { label: 'En attente',   value: pending.length,  color: '#F59E0B' },
     { label: 'Prioritaires', value: analyzed.filter((r) => r.analysis?.recommendation === 'priority').length, color: '#8B5CF6' },
   ];
+
+  
 
   return (
     <>
@@ -716,19 +788,48 @@ export default function JobDetail() {
             </button>
           </div>
         ) : (
-          <div className="jd-candidate-list">
-            {resumes
-              .sort((a, b) => (b.analysis?.score_total || 0) - (a.analysis?.score_total || 0))
-              .map((resume, index) => (
-                <CandidateCard
-                  key={resume.id}
-                  resume={resume}
-                  rank={index + 1}
-                  onDelete={(rid) => setResumes((prev) => prev.filter((r) => r.id !== rid))}
-                  onRetry={handleRetry}  // ← AJOUTER
-                />
-              ))}
-          </div>
+          <>
+            {/* ── Barre de sélection ── */}
+            {selectedIds.length > 0 && (
+              <div className="jd-selection-bar">
+                <span className="jd-selection-count">
+                  {selectedIds.length} candidat{selectedIds.length > 1 ? 's' : ''} sélectionné{selectedIds.length > 1 ? 's' : ''}
+                </span>
+                <button className="jd-select-all-btn" onClick={handleSelectAll}>
+                  {selectedIds.length === resumes.length
+                    ? <><Square size={13} /> Tout désélectionner</>
+                    : <><CheckSquare size={13} /> Tout sélectionner</>
+                  }
+                </button>
+                <button className="jd-delete-selected-btn" onClick={handleDeleteSelected}>
+                  <Trash2Icon size={13} /> Supprimer la sélection
+                </button>
+                <button className="jd-deselect-btn" onClick={() => setSelectedIds([])}>
+                  Annuler
+                </button>
+              </div>
+            )}
+
+            {/* ── Liste candidats ── */}
+            <div className="jd-candidate-list">
+              {resumes
+                .sort((a, b) => (b.analysis?.score_total || 0) - (a.analysis?.score_total || 0))
+                .map((resume, index) => (
+                  <CandidateCard
+                    key={resume.id}
+                    resume={resume}
+                    rank={index + 1}
+                    selected={selectedIds.includes(resume.id)}
+                    onSelect={handleSelect}
+                    onDelete={(rid) => {
+                      setResumes((prev) => prev.filter((r) => r.id !== rid));
+                      setSelectedIds((prev) => prev.filter((id) => id !== rid));
+                    }}
+                    onRetry={handleRetry}
+                  />
+                ))}
+            </div>
+          </>
         )
       )}
     </>
